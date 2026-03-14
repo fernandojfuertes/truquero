@@ -59,9 +59,9 @@ function buildTeamElement(team, index) {
   const segments = [];
 
   // Build Malas and Buenas sections
-  ['Malas', 'Buenas'].forEach((label) => {
+  ['Malas', 'Buenas'].forEach((label, i) => {
     const section = document.createElement('div');
-    section.className = 'section';
+    section.className = i === 0 ? 'section section-malas' : 'section section-buenas';
 
     const sectionLabel = document.createElement('div');
     sectionLabel.className = 'section-label';

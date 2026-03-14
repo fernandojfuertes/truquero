@@ -1,23 +1,21 @@
 :root {
-  --bg-start: #0b0f1a;
-  --bg-mid: #0d1b2a;
-  --bg-end: #1b2838;
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-bg-hover: rgba(255, 255, 255, 0.08);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-blur: 16px;
-  --accent: #60a5fa;
-  --accent-glow: rgba(96, 165, 250, 0.3);
-  --green: rgba(22, 163, 74, 0.7);
-  --green-glow: rgba(22, 163, 74, 0.3);
-  --seg-off: rgba(255, 255, 255, 0.04);
-  --muted: #9ca3af;
-  --text: #e5e7eb;
+  /* Fileteo Porteño Color Palette */
+  --bg: #0F1419;
+  --bg-card: #1a1f28;
+  --primary-red: #C41E3A;
+  --fileteo-blue: #1F3A70;
+  --accent-gold: #FFD700;
+  --accent-green: #2D5016;
+  --text: #F5F1E8;
+  --text-muted: #B8B8B8;
+  --text-secondary: #9CA3AF;
+
+  /* Structural variables */
   --cell: 9.5vh;
   --seg-w: 0.7vh;
   --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --radius: 16px;
-  --radius-sm: 10px;
+  --radius: 12px;
+  --radius-sm: 8px;
 }
 
 /* === Base === */
@@ -34,33 +32,7 @@ body {
   color: var(--text);
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-mid) 40%, var(--bg-end) 100%);
-}
-
-/* Ambient glow blobs */
-body::before,
-body::after {
-  content: '';
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-}
-body::before {
-  width: 50vw;
-  height: 50vw;
-  top: -10%;
-  left: -15%;
-  background: radial-gradient(circle, rgba(96, 165, 250, 0.12) 0%, transparent 70%);
-  filter: blur(60px);
-}
-body::after {
-  width: 40vw;
-  height: 40vw;
-  bottom: -5%;
-  right: -10%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
-  filter: blur(60px);
+  background: linear-gradient(135deg, var(--bg) 0%, #151b27 100%);
 }
 
 /* === Top Actions === */
@@ -73,26 +45,24 @@ body::after {
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+  border-bottom: 1px solid var(--accent-gold);
 }
 
 .btn-top {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  color: var(--muted);
+  background: var(--bg-card);
+  border: 1px solid var(--accent-gold);
+  color: var(--text);
   font-size: clamp(9px, 1.2vh, 11px);
   padding: 0.8vh 1.5vh;
   border-radius: 20px;
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 1px;
-  transition: box-shadow 0.3s, background 0.3s, color 0.3s;
+  transition: background 0.2s, color 0.2s;
 }
 .btn-top:active {
-  background: var(--glass-bg-hover);
-  box-shadow: 0 0 12px var(--accent-glow);
-  color: var(--accent);
+  background: var(--primary-red);
+  color: var(--text);
 }
 
 /* === Board === */
@@ -114,14 +84,14 @@ body::after {
   gap: 0.5vh;
 }
 
-/* === Team Card (Glass) === */
+/* === Team Card (Fileteo Porteño) === */
 .team {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
+  border: 2px solid var(--primary-red);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 215, 0, 0.3),
+    inset -1px -1px 0 rgba(255, 215, 0, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.5);
   border-radius: var(--radius);
   padding: 1vh;
   display: flex;
@@ -129,6 +99,30 @@ body::after {
   justify-content: space-between;
   min-height: 0;
   transition: box-shadow 0.3s;
+  position: relative;
+}
+
+/* Corner ornaments */
+.team::before,
+.team::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+}
+.team::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--accent-gold);
+  border-left: 2px solid var(--accent-gold);
+  border-radius: 2px;
+}
+.team::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid var(--accent-gold);
+  border-right: 2px solid var(--accent-gold);
+  border-radius: 2px;
 }
 
 /* === Header === */
@@ -138,7 +132,7 @@ body::after {
   justify-content: space-between;
   gap: 5px;
   padding-bottom: 5px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--accent-gold);
   flex-shrink: 0;
 }
 
@@ -148,7 +142,7 @@ body::after {
   background: transparent;
   border: none;
   border-bottom: 1px solid transparent;
-  color: #fff;
+  color: var(--text);
   text-align: left;
   width: 65%;
   padding: 2px 0;
@@ -157,13 +151,13 @@ body::after {
 }
 .name:focus {
   outline: none;
-  border-bottom-color: rgba(96, 165, 250, 0.5);
+  border-bottom-color: var(--accent-gold);
 }
 
 .total-display {
   font-size: clamp(16px, 3vh, 26px);
   font-weight: 900;
-  color: var(--accent);
+  color: var(--primary-red);
   text-align: right;
 }
 
@@ -178,8 +172,8 @@ body::after {
 /* === Sections (Malas / Buenas) === */
 .section {
   background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.15);
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.03);
   padding: 0.5vh;
   flex: 1;
   display: flex;
@@ -192,10 +186,11 @@ body::after {
 .section-label {
   font-size: clamp(7px, 1vh, 9px);
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--accent-gold);
   margin-bottom: 0.5vh;
   text-align: center;
   letter-spacing: 0.5px;
+  font-weight: 600;
 }
 
 .row {
@@ -215,7 +210,7 @@ body::after {
 
 .seg {
   position: absolute;
-  background: var(--seg-off);
+  background: #0f1419;
   border-radius: 1vh;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
@@ -229,18 +224,23 @@ body::after {
   z-index: 2;
 }
 
-.seg.on {
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent), 0 0 20px var(--accent-glow);
+/* Segments on - Malas (red) */
+.section-malas .seg.on {
+  background: var(--primary-red);
+  box-shadow: 0 2px 6px rgba(196, 30, 58, 0.4);
+}
+
+/* Segments on - Buenas (gold) */
+.section-buenas .seg.on {
+  background: var(--accent-gold);
+  box-shadow: 0 2px 6px rgba(255, 215, 0, 0.4);
 }
 
 /* === Controls Bar === */
 .controls-bar {
   height: 12vh;
-  background: rgba(15, 20, 30, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--glass-border);
+  background: var(--bg);
+  border-top: 2px solid var(--accent-gold);
   padding: 0 1vh;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -272,26 +272,27 @@ body::after {
   font-weight: bold;
   color: white;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
 }
 .btn-action:active {
   transform: scale(0.95);
 }
 
 .btn-plus {
-  background: var(--green);
-  box-shadow: 0 4px 15px var(--green-glow);
+  background: var(--primary-red);
+  box-shadow: 0 2px 8px rgba(196, 30, 58, 0.3);
 }
 .btn-plus:active {
-  box-shadow: 0 2px 8px var(--green-glow);
+  background: #8B1528;
 }
 
 .btn-minus {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--glass-border);
+  background: var(--fileteo-blue);
+  border: 1px solid var(--accent-gold);
+  box-shadow: 0 2px 8px rgba(31, 58, 112, 0.3);
 }
 .btn-minus:active {
-  background: rgba(255, 255, 255, 0.1);
+  background: #152847;
 }
 
 /* === Responsive === */
