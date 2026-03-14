@@ -33,16 +33,23 @@ function loadState() {
   }
 }
 
-// --- Dark Mode ---
-function loadDarkMode() {
-  if (localStorage.getItem('darkMode') === 'true') {
-    document.body.classList.add('dark');
+// --- Theme Toggle ---
+function loadTheme() {
+  if (localStorage.getItem('lightMode') === 'true') {
+    document.body.classList.add('light');
   }
+  updateThemeButton();
 }
 
-function toggleDarkMode() {
-  document.body.classList.toggle('dark');
-  localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  localStorage.setItem('lightMode', document.body.classList.contains('light'));
+  updateThemeButton();
+}
+
+function updateThemeButton() {
+  const isLight = document.body.classList.contains('light');
+  toggleDarkModeBtn.textContent = isLight ? '◐' : '◑';
 }
 
 // --- DOM Building ---
@@ -116,8 +123,8 @@ function buildTeamElement(team, index) {
   plusBtn.textContent = '+';
   plusBtn.addEventListener('click', () => addPoints(index, 1));
 
-  teamControls.appendChild(minusBtn);
   teamControls.appendChild(plusBtn);
+  teamControls.appendChild(minusBtn);
   el.appendChild(teamControls);
 
   // Store refs for efficient updates
@@ -232,9 +239,9 @@ toggleGalloBtn.addEventListener('click', () => {
 });
 
 resetBtn.addEventListener('click', resetAll);
-toggleDarkModeBtn.addEventListener('click', toggleDarkMode);
+toggleDarkModeBtn.addEventListener('click', toggleTheme);
 
 // --- Init ---
-loadDarkMode();
+loadTheme();
 loadState();
 render();

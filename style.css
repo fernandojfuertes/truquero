@@ -1,25 +1,5 @@
 :root {
-  /* Minimalista Palette - Light Mode */
-  --bg: #FFFFFF;
-  --bg-card: #FFFFFF;
-  --border: #000000;
-  --text: #000000;
-  --text-muted: #666666;
-  --seg-off: #E5E5E5;
-  --seg-on: #000000;
-  --btn-bg: #000000;
-  --btn-text: #FFFFFF;
-
-  /* Structural variables */
-  --cell: 9.5vh;
-  --seg-w: 0.7vh;
-  --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --radius: 4px;
-  --radius-sm: 2px;
-}
-
-/* Dark Mode */
-body.dark {
+  /* Minimalista Palette - Dark Mode (default) */
   --bg: #1a1a1a;
   --bg-card: #1a1a1a;
   --border: #ffffff;
@@ -29,15 +9,40 @@ body.dark {
   --seg-on: #ffffff;
   --btn-bg: #ffffff;
   --btn-text: #000000;
+
+  /* Structural variables */
+  --cell: 9.5vh;
+  --seg-w: 0.7vh;
+  --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --radius: 4px;
+  --radius-sm: 2px;
+}
+
+/* Light Mode */
+body.light {
+  --bg: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --border: #000000;
+  --text: #000000;
+  --text-muted: #666666;
+  --seg-off: #E5E5E5;
+  --seg-on: #000000;
+  --btn-bg: #000000;
+  --btn-text: #FFFFFF;
 }
 
 /* === Base === */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html, body {
   height: 100dvh;
   overflow: hidden;
   position: fixed;
   width: 100%;
   margin: 0;
+  touch-action: manipulation;
 }
 
 body {
@@ -48,8 +53,8 @@ body {
   background: var(--bg);
 }
 
-/* === Top Actions === */
-.top-actions {
+/* === Bottom Actions === */
+.bottom-actions {
   height: 7vh;
   display: flex;
   justify-content: center;
@@ -58,7 +63,8 @@ body {
   flex-shrink: 0;
   position: relative;
   z-index: 1;
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .btn-top {
@@ -86,9 +92,9 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   padding: 8px;
-  max-width: 100%;
   margin: 0 auto;
   width: 100%;
+  max-width: 900px;
   min-height: 0;
   position: relative;
   z-index: 1;
@@ -293,6 +299,7 @@ body {
   color: var(--btn-text);
   background: var(--btn-bg);
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 0.15s, opacity 0.15s;
 }
 .btn-action:active {
