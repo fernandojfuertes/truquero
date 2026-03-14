@@ -12,6 +12,7 @@ const board = document.getElementById('board');
 const controls = document.getElementById('controls');
 const toggleGalloBtn = document.getElementById('toggleGallo');
 const resetBtn = document.getElementById('resetBtn');
+const toggleDarkModeBtn = document.getElementById('toggleDarkMode');
 
 // --- Element Cache ---
 let teamElements = [];
@@ -30,6 +31,18 @@ function loadState() {
       // Ignore corrupt data
     }
   }
+}
+
+// --- Dark Mode ---
+function loadDarkMode() {
+  if (localStorage.getItem('darkMode') === 'true') {
+    document.body.classList.add('dark');
+  }
+}
+
+function toggleDarkMode() {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('darkMode', document.body.classList.contains('dark'));
 }
 
 // --- DOM Building ---
@@ -88,6 +101,24 @@ function buildTeamElement(team, index) {
     section.appendChild(row);
     el.appendChild(section);
   });
+
+  // Build team controls (buttons)
+  const teamControls = document.createElement('div');
+  teamControls.className = 'team-controls';
+
+  const minusBtn = document.createElement('button');
+  minusBtn.className = 'btn-action btn-minus';
+  minusBtn.textContent = '-';
+  minusBtn.addEventListener('click', () => addPoints(index, -1));
+
+  const plusBtn = document.createElement('button');
+  plusBtn.className = 'btn-action btn-plus';
+  plusBtn.textContent = '+';
+  plusBtn.addEventListener('click', () => addPoints(index, 1));
+
+  teamControls.appendChild(minusBtn);
+  teamControls.appendChild(plusBtn);
+  el.appendChild(teamControls);
 
   // Store refs for efficient updates
   el._refs = { nameInput, totalDisplay, segments };
@@ -180,6 +211,10 @@ function addPoints(index, delta) {
 function resetAll() {
   if (confirm('¿Reiniciar puntos?')) {
     state.teams.forEach(t => t.score = 0);
+    // Remove Gallo if present
+    if (state.teams.length === 3) {
+      state.teams.pop();
+    }
     render();
     saveState();
   }
@@ -197,7 +232,9 @@ toggleGalloBtn.addEventListener('click', () => {
 });
 
 resetBtn.addEventListener('click', resetAll);
+toggleDarkModeBtn.addEventListener('click', toggleDarkMode);
 
 // --- Init ---
+loadDarkMode();
 loadState();
 render();
