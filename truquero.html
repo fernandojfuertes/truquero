@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"/>
+  <title>Anotador Truco Pro</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --card:#111827;
+      --border:#243244;
+      --muted:#9ca3af;
+      --active-color:#60a5fa; /* Color único para todos los segmentos */
+      --off:#1f2937;
+      --cell: 9.5vh; 
+      --seg-w: 0.7vh;
+      --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    }
+
+    html, body {
+      height: 100dvh;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      margin: 0;
+      background: var(--bg);
+    }
+
+    body {
+      font-family: var(--font);
+      color: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-actions {
+      height: 7vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .btn-top {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: clamp(9px, 1.2vh, 11px);
+      padding: 0.8vh 1.5vh;
+      border-radius: 20px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .board {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1vh;
+      padding: 0 1vh;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      min-height: 0; 
+    }
+    .board.gallo { grid-template-columns: repeat(3, 1fr); gap: 0.5vh; }
+
+    .team {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1.5vh;
+      padding: 1vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 0;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 5px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      flex-shrink: 0;
+    }
+
+    .name {
+      font-size: clamp(12px, 2vh, 16px);
+      font-weight: 700;
+      background: transparent;
+      border: none;
+      color: #fff;
+      text-align: left;
+      width: 65%;
+    }
+
+    .total-display {
+      font-size: clamp(16px, 3vh, 26px);
+      font-weight: 900;
+      color: var(--active-color);
+      text-align: right;
+    }
+
+    .section {
+      background: rgba(0,0,0,0.2);
+      border-radius: 1vh;
+      padding: 0.5vh;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 0;
+      margin-top: 5px;
+    }
+    .section-label {
+      font-size: clamp(7px, 1vh, 9px);
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5vh;
+      text-align: center;
+    }
+
+    .row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5vh; 
+    }
+
+    .cell {
+      width: var(--cell);
+      height: var(--cell);
+      position: relative;
+      flex-shrink: 1;
+    }
+    .seg {
+      position: absolute;
+      background: var(--off);
+      border-radius: 1vh;
+      transition: background 0.1s, box-shadow 0.1s;
+    }
+    .p1 { top: 0; left: 15%; right: 15%; height: var(--seg-w); }
+    .p2 { top: 15%; right: 0; bottom: 15%; width: var(--seg-w); }
+    .p3 { bottom: 0; left: 15%; right: 15%; height: var(--seg-w); }
+    .p4 { top: 15%; left: 0; bottom: 15%; width: var(--seg-w); }
+    .p5 { 
+      top: 50%; left: 50%; width: 120%; height: var(--seg-w); 
+      transform: translate(-50%, -50%) rotate(-45deg); 
+      z-index: 2;
+    }
+
+    .seg.on {
+      background: var(--active-color);
+      box-shadow: 0 0 10px var(--active-color);
+    }
+
+    .controls-bar {
+      height: 12vh;
+      background: rgba(17, 24, 39, 0.98);
+      border-top: 1px solid var(--border);
+      padding: 0 1vh;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1vh;
+      align-items: center;
+      padding-bottom: max(1vh, env(safe-area-inset-bottom));
+    }
+    .controls-bar.gallo { grid-template-columns: repeat(3, 1fr); gap: 0.5vh; }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .btn-action {
+      flex: 1;
+      height: 7vh;
+      max-width: 70px;
+      border: none;
+      border-radius: 1vh;
+      font-size: clamp(18px, 3.5vh, 28px);
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      transition: opacity 0.1s;
+    }
+    .btn-action:active { opacity: 0.7; }
+    .btn-plus { background: #16a34a; }
+    .btn-minus { background: #374151; }
+
+    @media (orientation: landscape) and (min-width: 1024px) {
+      :root { --cell: 8vh; --seg-w: 0.6vh; }
+      .board { max-width: 800px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-actions">
+    <button class="btn-top" id="toggleGallo">+ Gallo</button>
+    <button class="btn-top" onclick="resetAll()">Reiniciar</button>
+  </div>
+
+  <div id="board"></div>
+  <div id="controls"></div>
+
+  <script>
+    const TARGET = 30;
+    let teams = [{ name: 'Nosotros', score: 0 }, { name: 'Ellos', score: 0 }];
+
+    const board = document.getElementById('board');
+    const controls = document.getElementById('controls');
+    const toggleGalloBtn = document.getElementById('toggleGallo');
+
+    function render() {
+      board.innerHTML = '';
+      controls.innerHTML = '';
+      const isGallo = teams.length === 3;
+      
+      board.className = isGallo ? 'board gallo' : 'board';
+      controls.className = isGallo ? 'controls-bar gallo' : 'controls-bar';
+      toggleGalloBtn.textContent = isGallo ? '- Quitar Gallo' : '+ Agregar Gallo';
+
+      teams.forEach((team, index) => {
+        const teamEl = document.createElement('div');
+        teamEl.className = 'team';
+        teamEl.innerHTML = `
+          <div class="header-row">
+            <input class="name" value="${team.name}" onchange="teams[${index}].name = this.value">
+            <div class="total-display">${team.score}</div>
+          </div>
+          <div class="section">
+            <div class="section-label">Malas</div>
+            <div class="row">${renderPoints(team.score, 0)}</div>
+          </div>
+          <div class="section">
+            <div class="section-label">Buenas</div>
+            <div class="row">${renderPoints(team.score, 15)}</div>
+          </div>
+        `;
+        board.appendChild(teamEl);
+
+        const group = document.createElement('div');
+        group.className = 'btn-group';
+        group.innerHTML = `
+          <button class="btn-action btn-minus" onclick="addPoints(${index}, -1)">-</button>
+          <button class="btn-action btn-plus" onclick="addPoints(${index}, 1)">+</button>
+        `;
+        controls.appendChild(group);
+      });
+    }
+
+    function renderPoints(totalScore, offset) {
+      let pointsInSection = Math.max(0, Math.min(15, totalScore - offset));
+      let html = '';
+      for(let i=0; i<3; i++) {
+        let cellPoints = Math.max(0, Math.min(5, pointsInSection - (i * 5)));
+        html += `<div class="cell">
+          ${[1,2,3,4,5].map(p => `<div class="seg p${p} ${p <= cellPoints ? 'on' : ''}"></div>`).join('')}
+        </div>`;
+      }
+      return html;
+    }
+
+    function addPoints(index, val) {
+      teams[index].score = Math.max(0, Math.min(TARGET, teams[index].score + val));
+      render();
+    }
+
+    function resetAll() {
+      if(confirm('¿Reiniciar puntos?')) {
+        teams.forEach(t => t.score = 0);
+        render();
+      }
+    }
+
+    toggleGalloBtn.onclick = () => {
+      if(teams.length === 2) teams.push({ name: 'Gallo', score: 0 });
+      else teams.pop();
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>
