@@ -1,21 +1,21 @@
 :root {
-  /* Fileteo Porteño Color Palette */
-  --bg: #0F1419;
-  --bg-card: #1a1f28;
-  --primary-red: #C41E3A;
-  --fileteo-blue: #1F3A70;
-  --accent-gold: #FFD700;
-  --accent-green: #2D5016;
-  --text: #F5F1E8;
-  --text-muted: #B8B8B8;
-  --text-secondary: #9CA3AF;
+  /* Minimalista Palette */
+  --bg: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --border: #000000;
+  --text: #000000;
+  --text-muted: #666666;
+  --seg-off: #E5E5E5;
+  --seg-on: #000000;
+  --btn-bg: #000000;
+  --btn-text: #FFFFFF;
 
   /* Structural variables */
   --cell: 9.5vh;
   --seg-w: 0.7vh;
   --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --radius: 12px;
-  --radius-sm: 8px;
+  --radius: 4px;
+  --radius-sm: 2px;
 }
 
 /* === Base === */
@@ -32,7 +32,7 @@ body {
   color: var(--text);
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, var(--bg) 0%, #151b27 100%);
+  background: var(--bg);
 }
 
 /* === Top Actions === */
@@ -45,24 +45,25 @@ body {
   flex-shrink: 0;
   position: relative;
   z-index: 1;
-  border-bottom: 1px solid var(--accent-gold);
+  border-bottom: 1px solid var(--border);
 }
 
 .btn-top {
-  background: var(--bg-card);
-  border: 1px solid var(--accent-gold);
+  background: var(--bg);
+  border: 1px solid var(--border);
   color: var(--text);
   font-size: clamp(9px, 1.2vh, 11px);
   padding: 0.8vh 1.5vh;
-  border-radius: 20px;
+  border-radius: var(--radius);
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 1px;
+  font-weight: 600;
   transition: background 0.2s, color 0.2s;
 }
 .btn-top:active {
-  background: var(--primary-red);
-  color: var(--text);
+  background: var(--border);
+  color: var(--btn-text);
 }
 
 /* === Board === */
@@ -70,9 +71,9 @@ body {
   flex: 1;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1vh;
-  padding: 0 1vh;
-  max-width: 1200px;
+  gap: 8px;
+  padding: 8px;
+  max-width: 100%;
   margin: 0 auto;
   width: 100%;
   min-height: 0;
@@ -81,48 +82,27 @@ body {
 }
 .board.gallo {
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.5vh;
+  gap: 8px;
 }
 
-/* === Team Card (Fileteo Porteño) === */
+/* === Team Card (Minimalista) === */
 .team {
   background: var(--bg-card);
-  border: 2px solid var(--primary-red);
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 215, 0, 0.3),
-    inset -1px -1px 0 rgba(255, 215, 0, 0.15),
-    0 4px 12px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1vh;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   min-height: 0;
-  transition: box-shadow 0.3s;
+  transition: box-shadow 0.2s;
   position: relative;
 }
 
-/* Corner ornaments */
+/* Remove corner ornaments */
 .team::before,
 .team::after {
-  content: '';
-  position: absolute;
-  width: 14px;
-  height: 14px;
-}
-.team::before {
-  top: -1px;
-  left: -1px;
-  border-top: 2px solid var(--accent-gold);
-  border-left: 2px solid var(--accent-gold);
-  border-radius: 2px;
-}
-.team::after {
-  bottom: -1px;
-  right: -1px;
-  border-bottom: 2px solid var(--accent-gold);
-  border-right: 2px solid var(--accent-gold);
-  border-radius: 2px;
+  display: none;
 }
 
 /* === Header === */
@@ -131,9 +111,10 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 5px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--accent-gold);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  margin-bottom: 8px;
 }
 
 .name {
@@ -151,13 +132,13 @@ body {
 }
 .name:focus {
   outline: none;
-  border-bottom-color: var(--accent-gold);
+  border-bottom-color: var(--border);
 }
 
 .total-display {
   font-size: clamp(16px, 3vh, 26px);
   font-weight: 900;
-  color: var(--primary-red);
+  color: var(--text);
   text-align: right;
 }
 
@@ -171,23 +152,23 @@ body {
 
 /* === Sections (Malas / Buenas) === */
 .section {
-  background: rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 215, 0, 0.15);
-  border-radius: var(--radius-sm);
-  padding: 0.5vh;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 8px 0;
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   min-height: 0;
-  margin-top: 5px;
+  margin-top: 0;
 }
 
 .section-label {
   font-size: clamp(7px, 1vh, 9px);
   text-transform: uppercase;
-  color: var(--accent-gold);
-  margin-bottom: 0.5vh;
+  color: var(--text-muted);
+  margin-bottom: 8px;
   text-align: center;
   letter-spacing: 0.5px;
   font-weight: 600;
@@ -197,7 +178,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5vh;
+  gap: 6px;
 }
 
 /* === Segment Display === */
@@ -210,9 +191,9 @@ body {
 
 .seg {
   position: absolute;
-  background: #0f1419;
-  border-radius: 1vh;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  background: var(--seg-off);
+  border-radius: var(--radius-sm);
+  transition: background 0.2s ease;
 }
 .p1 { top: 0; left: 15%; right: 15%; height: var(--seg-w); }
 .p2 { top: 15%; right: 0; bottom: 15%; width: var(--seg-w); }
@@ -224,75 +205,67 @@ body {
   z-index: 2;
 }
 
-/* Segments on - Malas (red) */
+/* Segments on - Malas (black) */
 .section-malas .seg.on {
-  background: var(--primary-red);
-  box-shadow: 0 2px 6px rgba(196, 30, 58, 0.4);
+  background: var(--seg-on);
 }
 
-/* Segments on - Buenas (gold) */
+/* Segments on - Buenas (black) */
 .section-buenas .seg.on {
-  background: var(--accent-gold);
-  box-shadow: 0 2px 6px rgba(255, 215, 0, 0.4);
+  background: var(--seg-on);
 }
 
 /* === Controls Bar === */
 .controls-bar {
-  height: 12vh;
+  height: 15vh;
   background: var(--bg);
-  border-top: 2px solid var(--accent-gold);
-  padding: 0 1vh;
+  border-top: 1px solid var(--border);
+  padding: 8px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1vh;
+  gap: 8px;
   align-items: center;
-  padding-bottom: max(1vh, env(safe-area-inset-bottom));
+  justify-items: center;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
   position: relative;
   z-index: 1;
 }
 .controls-bar.gallo {
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.5vh;
+  gap: 8px;
 }
 
 .btn-group {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
+  align-items: center;
   width: 100%;
+  height: 100%;
 }
 
 .btn-action {
-  flex: 1;
-  height: 7vh;
+  width: 45%;
+  height: 80%;
   max-width: 70px;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: clamp(18px, 3.5vh, 28px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: clamp(16px, 2.5vh, 24px);
   font-weight: bold;
-  color: white;
+  color: var(--btn-text);
+  background: var(--btn-bg);
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  transition: transform 0.15s, opacity 0.15s;
 }
 .btn-action:active {
   transform: scale(0.95);
+  opacity: 0.8;
 }
 
-.btn-plus {
-  background: var(--primary-red);
-  box-shadow: 0 2px 8px rgba(196, 30, 58, 0.3);
-}
-.btn-plus:active {
-  background: #8B1528;
-}
-
+.btn-plus,
 .btn-minus {
-  background: var(--fileteo-blue);
-  border: 1px solid var(--accent-gold);
-  box-shadow: 0 2px 8px rgba(31, 58, 112, 0.3);
-}
-.btn-minus:active {
-  background: #152847;
+  background: var(--btn-bg);
+  color: var(--btn-text);
 }
 
 /* === Responsive === */
