@@ -65,6 +65,9 @@ body {
   z-index: 1;
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .btn-top {
@@ -313,11 +316,51 @@ body {
   color: var(--btn-text);
 }
 
-/* === Responsive === */
+/* === Responsive: Gallo on mobile only === */
+@media (max-width: 600px) {
+  .board.gallo {
+    --cell: 7vh;
+    --seg-w: 0.5vh;
+    gap: 4px;
+    padding: 4px 6px;
+  }
+  .board.gallo .team {
+    padding: 6px;
+  }
+  .board.gallo .btn-action {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  .board.gallo .name {
+    font-size: clamp(10px, 1.5vh, 13px);
+  }
+  .board.gallo .total-display {
+    font-size: clamp(14px, 2.5vh, 20px);
+  }
+  .board.gallo .row {
+    gap: 3px;
+  }
+  .board.gallo .section-label {
+    margin-bottom: 4px;
+  }
+  .board.gallo .header-row {
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+  }
+  .board.gallo .team-controls {
+    margin-top: 4px;
+    padding-top: 4px;
+    gap: 4px;
+  }
+}
+
+/* === Responsive: Desktop === */
 @media (orientation: landscape) and (min-width: 1024px) {
   :root {
     --cell: 8vh;
     --seg-w: 0.6vh;
   }
   .board { max-width: 800px; }
+  .bottom-actions { max-width: 800px; }
 }

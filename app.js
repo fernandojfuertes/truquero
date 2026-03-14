@@ -16,6 +16,7 @@ const toggleDarkModeBtn = document.getElementById('toggleDarkMode');
 
 // --- Element Cache ---
 let teamElements = [];
+let savedGallo = null;
 
 // --- Persistence ---
 function saveState() {
@@ -222,6 +223,7 @@ function resetAll() {
     if (state.teams.length === 3) {
       state.teams.pop();
     }
+    savedGallo = null;
     render();
     saveState();
   }
@@ -230,9 +232,10 @@ function resetAll() {
 // --- Event Listeners ---
 toggleGalloBtn.addEventListener('click', () => {
   if (state.teams.length === 2) {
-    state.teams.push({ name: 'Gallo', score: 0 });
+    state.teams.push(savedGallo || { name: 'Gallo', score: 0 });
+    savedGallo = null;
   } else {
-    state.teams.pop();
+    savedGallo = state.teams.pop();
   }
   render();
   saveState();
