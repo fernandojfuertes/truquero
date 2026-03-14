@@ -63,7 +63,6 @@ body {
   flex-shrink: 0;
   position: relative;
   z-index: 1;
-  border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
   max-width: 900px;
   width: 100%;
