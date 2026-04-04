@@ -433,7 +433,7 @@ function refreshPlayerInputs() {
       const input = document.createElement('input');
       input.type        = 'text';
       input.className   = 'player-input';
-      input.placeholder = `Jugador ${i + 1}`;
+      input.placeholder = setupSize === 1 ? `Jugador ${teamNum}` : `Jugador ${i + 1}`;
       input.maxLength   = 15;
       container.appendChild(input);
     }
