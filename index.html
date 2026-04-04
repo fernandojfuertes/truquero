@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"/>
+  <title>🥇🗡️Truquero🍷🪾</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗡️</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%231a1a1a'/><g stroke='%23ffffff' stroke-width='3' fill='none'><rect x='30' y='30' width='40' height='40'/><rect x='76' y='30' width='40' height='40'/><rect x='122' y='30' width='40' height='40'/><rect x='30' y='76' width='40' height='40'/><rect x='76' y='76' width='40' height='40'/><rect x='122' y='76' width='40' height='40'/><line x1='30' y1='30' x2='70' y2='70'/><line x1='76' y1='30' x2='116' y2='70'/><line x1='122' y1='30' x2='162' y2='70'/><line x1='30' y1='76' x2='70' y2='116'/><line x1='76' y1='76' x2='116' y2='116'/><line x1='122' y1='76' x2='162' y2='116'/></g></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="board"></div>
+  <div id="controls"></div>
+
+  <div class="bottom-actions">
+    <button class="btn-top" id="toggleGallo">+ Gallo</button>
+    <button class="btn-top" id="siguienteMano" style="display:none">Sig. Mano</button>
+    <button class="btn-top" id="byPointsBtn">Puntos</button>
+    <button class="btn-top" id="historyBtn">Historial</button>
+    <button class="btn-top" id="resetBtn">Reiniciar</button>
+    <button class="btn-top" id="toggleTarget">15</button>
+    <button class="btn-top" id="toggleDarkMode">◑</button>
+  </div>
+
+  <!-- Setup modal -->
+  <div id="setupModal" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-title" style="margin-bottom:16px">Jugar por puntos</div>
+      <div class="setup-size-label">Jugadores por equipo</div>
+      <div class="size-selector">
+        <button class="size-btn active" data-size="1">1</button>
+        <button class="size-btn" data-size="2">2</button>
+        <button class="size-btn" data-size="3">3</button>
+      </div>
+      <div class="team-section">
+        <div class="team-section-label">Equipo 1</div>
+        <div id="team1Inputs" class="team-inputs"></div>
+      </div>
+      <div class="team-section">
+        <div class="team-section-label">Equipo 2</div>
+        <div id="team2Inputs" class="team-inputs"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn-secondary" id="cancelSetup">Cancelar</button>
+        <button class="modal-btn-primary" id="confirmSetup">Jugar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Winner overlay -->
+  <div id="winnerOverlay" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="winner-content">
+        <div class="winner-label" id="winnerLabel">Ganaron</div>
+        <div class="winner-name-display" id="winnerName"></div>
+        <div class="winner-score-display" id="winnerScore"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn-secondary" id="skipSaveBtn">No guardar</button>
+        <button class="modal-btn-primary" id="saveGameBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History overlay -->
+  <div id="historyOverlay" class="modal-overlay hidden">
+    <div class="modal-sheet modal-sheet--tall">
+      <div class="modal-header">
+        <div class="modal-title">Historial</div>
+        <button class="modal-close" id="closeHistory">✕</button>
+      </div>
+      <div id="historyContent" class="history-content"></div>
+    </div>
+  </div>
+
+  <!-- Confirm reset modal -->
+  <div id="confirmModal" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-title" style="margin-bottom:12px">Reiniciar</div>
+      <p style="color:var(--text-muted);font-size:14px;margin:0 0 4px">¿Reiniciar los puntos?</p>
+      <div class="modal-actions">
+        <button class="modal-btn-secondary" id="confirmModalCancel">Cancelar</button>
+        <button class="modal-btn-primary" id="confirmModalOk">Reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
