@@ -379,7 +379,7 @@ function addPoints(index, delta) {
   if (team.score !== prev) delta > 0 ? soundAdd() : soundRemove();
   updateScore(index);
   saveState();
-  if (team.score === state.TARGET && state.teams.length === 2 && rankedConfig.active) {
+  if (team.score === state.TARGET && state.teams.length === 2 && rankedConfig.active && state.TARGET === 30) {
     showWinnerOverlay(index);
   }
 }
