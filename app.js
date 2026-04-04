@@ -37,7 +37,6 @@ function saveState() {
   localStorage.setItem('trucoState', JSON.stringify({
     teams:  state.teams,
     mano:   state.mano,
-    target: state.TARGET,
     ranked: rankedConfig
   }));
 }
@@ -52,7 +51,6 @@ function loadState() {
     } else {
       state.teams  = data.teams  ?? state.teams;
       state.mano   = data.mano   ?? 0;
-      state.TARGET = data.target ?? 30;
       rankedConfig = data.ranked ?? rankedConfig;
     }
   } catch(e) {}
@@ -401,8 +399,10 @@ function doReset() {
   });
   if (state.teams.length === 3) state.teams.pop();
   state.mano   = 0;
+  state.TARGET = 30;
   savedGallo   = null;
   rankedConfig = { active: false, teamSize: 1, teams: [[], []] };
+  updateTargetBtn();
   render();
   saveState();
 }
