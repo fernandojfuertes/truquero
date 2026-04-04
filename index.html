@@ -14,13 +14,13 @@
   <div id="controls"></div>
 
   <div class="bottom-actions">
-    <button class="btn-top" id="toggleTarget">15</button>
-    <button class="btn-top" id="byPointsBtn">Puntos</button>
-    <button class="btn-top" id="toggleGallo">+ Gallo</button>
-    <button class="btn-top" id="siguienteMano" style="display:none">Sig. Mano</button>
-    <button class="btn-top" id="historyBtn">Historial</button>
-    <button class="btn-top" id="resetBtn">Reiniciar</button>
-    <button class="btn-top" id="toggleDarkMode">◑</button>
+    <button class="btn-top" id="toggleTarget" aria-label="Cambiar límite de puntos">15</button>
+    <button class="btn-top" id="byPointsBtn" aria-label="Jugar por puntos">Puntos</button>
+    <button class="btn-top" id="toggleGallo" aria-label="Activar modo Gallo">+ Gallo</button>
+    <button class="btn-top" id="siguienteMano" style="display:none" aria-label="Siguiente mano">Sig. Mano</button>
+    <button class="btn-top" id="historyBtn" aria-label="Ver historial">Historial</button>
+    <button class="btn-top" id="resetBtn" aria-label="Reiniciar partida">Reiniciar</button>
+    <button class="btn-top" id="toggleDarkMode" aria-label="Cambiar tema claro/oscuro">◑</button>
   </div>
 
   <!-- Setup modal -->
@@ -68,7 +68,7 @@
     <div class="modal-sheet modal-sheet--tall">
       <div class="modal-header">
         <div class="modal-title">Historial</div>
-        <button class="modal-close" id="closeHistory">✕</button>
+        <button class="modal-close" id="closeHistory" aria-label="Cerrar historial">✕</button>
       </div>
       <div id="historyContent" class="history-content"></div>
     </div>
