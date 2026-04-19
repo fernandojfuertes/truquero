@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Claude Code
+.claude/
+
+# oh-my-claudecode
+.omc/
+
+# IDE
+.vscode/
+.idea/
+
+# Node (si lo usas después)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment
+.env
+.env.local
