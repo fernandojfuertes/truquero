@@ -14,41 +14,49 @@
  
 </div>
  
-## 📋 Tabla de contenidos
+## Tabla de contenidos
  
-- [Características](#-características)
-  - [Modos de juego](#modos-de-juego)
-  - [Historial de partidas](#historial-de-partidas)
-  - [Otras funciones](#otras-funciones)
-- [Uso](#-uso)
-  - [Controles](#controles)
-- [Tecnología](#-tecnología)
-- [📖 Reglamento oficial del Truco Argentino](#-reglamento-oficial--truco-argentino)
-  - [01 — Introducción](#01--introducción)
-  - [02 — Las cartas y su jerarquía](#02--las-cartas-y-su-jerarquía)
-  - [03 — Inicio del juego y el reparto](#03--inicio-del-juego-y-el-reparto)
-  - [04 — El envido](#04--el-envido)
-  - [05 — El truco](#05--el-truco)
-  - [06 — La flor](#06--la-flor)
-  - [07 — Las señas](#07--las-señas)
-  - [08 — El puntaje y cómo ganar](#08--el-puntaje-y-cómo-ganar)
-  - [09 — Normas de conducta y disposiciones generales](#09--normas-de-conducta-y-disposiciones-generales)
+- [Truquero](#truquero)
+    - [Marcador digital de Truco argentino](#marcador-digital-de-truco-argentino)
+  - [Tabla de contenidos](#tabla-de-contenidos)
+  - [ Características](#-características)
+    - [Modos de juego](#modos-de-juego)
+    - [Historial de partidas](#historial-de-partidas)
+    - [Otras funciones](#otras-funciones)
+  - [ Uso](#-uso)
+    - [Controles](#controles)
+  - [ Tecnología](#-tecnología)
+- [ REGLAMENTO OFICIAL — TRUCO ARGENTINO](#-reglamento-oficial--truco-argentino)
+  - [](#)
+    - [01 — Introducción](#01--introducción)
+    - [02 — Las cartas y su jerarquía](#02--las-cartas-y-su-jerarquía)
+  - [](#-1)
+    - [03 — Inicio del juego y el reparto](#03--inicio-del-juego-y-el-reparto)
+    - [04 — El envido](#04--el-envido)
+  - [](#-2)
+    - [05 — El truco](#05--el-truco)
+  - [](#-3)
+    - [06 — La flor](#06--la-flor)
+    - [07 — Las señas](#07--las-señas)
+  - [](#-4)
+    - [08 — El puntaje y cómo ganar](#08--el-puntaje-y-cómo-ganar)
+    - [09 — Normas de conducta y disposiciones generales](#09--normas-de-conducta-y-disposiciones-generales)
 ---
  
-## ✨ Características
+##  Características
  
 ### Modos de juego
  
-> **Modo tradicional (2 equipos)**
-> - Equipos de 1, 2 o 3 jugadores
-> - Marcador hasta 30 puntos (15 malas + 15 buenas) o 15 puntos (set único)
-> - Display de segmentos al estilo del marcador clásico de truco
+**Modo tradicional (2 equipos)**
+- Equipos de 1, 2 o 3 jugadores
+- Marcador hasta 30 puntos (15 malas + 15 buenas) o 15 puntos (set único)
+- Display de segmentos al estilo del marcador clásico de truco
  
-> **Modo Gallo (3 jugadores)**
-> - Alianza rotativa 2 vs 1 por mano
-> - Mano 1: A+B vs C / Mano 2: B+C vs A / Mano 3: C+A vs B
-> - Botón `Sig. Mano` para rotar la alianza
-> - Compatible con modo 15 puntos
+**Modo Gallo (3 jugadores)**
+- Alianza rotativa 2 vs 1 por mano
+- Mano 1: A+B vs C / Mano 2: B+C vs A / Mano 3: C+A vs B
+- Botón `Sig. Mano` para rotar la alianza
+- Compatible con modo 15 puntos
  
 ### Historial de partidas
  
@@ -59,14 +67,14 @@
 - Al guardar, el marcador se reinicia automáticamente para una nueva partida
 ### Otras funciones
  
-- 🌗 Modo oscuro / claro
-- 🔊 Sonido al sumar y restar puntos
-- 💾 Persistencia automática (se guarda el estado al cerrar)
-- 📱 Optimizado para mobile (portrait y landscape)
-- 📲 Instalable en pantalla de inicio (iOS/Android)
+-  Modo oscuro / claro
+-  Sonido al sumar y restar puntos
+-  Persistencia automática (se guarda el estado al cerrar)
+-  Optimizado para mobile (portrait y landscape)
+-  Instalable en pantalla de inicio (iOS/Android)
 ---
  
-## 🚀 Uso
+##  Uso
  
 Abrí `index.html` en el navegador, o accedé desde el link del repositorio vía GitHub Pages.
  
@@ -75,37 +83,26 @@ Abrí `index.html` en el navegador, o accedé desde el link del repositorio vía
 | Botón | Acción |
 |:---:|:---|
 | `+` / `-` | Sumar o restar punto al equipo |
-| `+ Gallo` | Activar modo Gallo (3 jugadores) |
-| `Sig. Mano` | Rotar la alianza en modo Gallo |
-| `Puntos` | Configurar partida con nombre de jugadores |
-| `Historial` | Ver estadísticas y partidas guardadas |
+| `Historial` | Ver estadísticas y partidas guardadas 
+| `Sig. Mano` | Rotar la alianza en modo Gallo ||
 | `Reiniciar` | Volver a cero |
-| `15` / `30` | Alternar entre modo 15 y 30 puntos |
 | `◑` | Alternar modo oscuro/claro |
  
 ---
  
-## 🛠 Tecnología
+##  Tecnología
  
 **Vanilla JS + CSS + HTML.** Sin frameworks, sin dependencias, sin build step.
  
 - Estado persistido en `localStorage`
 - Sonidos generados con **Web Audio API**
 - Display de segmentos construido con CSS puro
----
- 
-<div align="center">
-# 📖 REGLAMENTO OFICIAL — TRUCO ARGENTINO
- 
-*Basado en la tradición popular argentina y el reglamento de la Asociación Argentina de Truco (ASART) — Juegos Evita.*
-**Edición 2025.**
- 
-</div>
+
 ---
  
 ### 01 — Introducción
  
-El Truco Argentino es uno de los juegos de naipes más arraigados en la cultura popular del país, derivado del Truc catalán que los inmigrantes españoles trajeron al Río de la Plata y que con el tiempo adquirió características propias e inconfundibles. Se disputa con una baraja española de cuarenta cartas, excluyendo los ochos, los nueves y los comodines. Pueden participar dos, cuatro o seis jugadores: en el caso de cuatro, se conforman dos parejas; con seis, se forman dos tríos que se enfrentan entre sí.
+El Truco es uno de los juegos de naipes más arraigados en la cultura popular del país, derivado del Truc catalán que los inmigrantes españoles trajeron al Río de la Plata y que con el tiempo adquirió características propias e inconfundibles. Se juega con una baraja española de cuarenta cartas, excluyendo los ochos, los nueves y los comodines. Pueden participar dos, cuatro o seis jugadores: en el caso de cuatro, se conforman dos parejas; con seis, se forman dos tríos que se enfrentan entre sí.
  
 El propósito del juego es acumular treinta puntos antes que el adversario. La primera mitad del recorrido, los quince puntos iniciales, se denomina popularmente *las malas*; la segunda mitad, *las buenas*. También existe la variante reducida a quince puntos. Cada mano ofrece la oportunidad de sumar a través de dos instancias diferenciadas: el envido, que evalúa el potencial combinatorio de las cartas según su palo, y el truco, que determina quién domina la baza. La astucia, el engaño permitido y la comunicación silenciosa entre compañeros mediante señas reglamentarias son elementos tan centrales como las cartas mismas.
  
@@ -120,24 +117,25 @@ Para la disputa del truco, las cartas tienen una jerarquía precisa que no coinc
 Para el cálculo del envido, solo cuentan los naipes numerados del uno al siete; las figuras —sota, caballo y rey— tienen valor cero en esta instancia.
  
 <details>
-<summary><b>🃏 Tabla de Jerarquía — Truco</b></summary>
-<br>
+<summary><b>Tabla de Jerarquía — Truco</b></summary>
+
 | Rango | Carta | Nota |
 |:---:|:---|:---|
-| 1° | As de Espadas | *El ancho de espadas* — carta más alta del juego |
+| 1° | As de Espadas | *El ancho de espadas* |
 | 2° | As de Bastos | *El ancho de bastos* |
 | 3° | Siete de Espadas | *La manilla de espadas* |
 | 4° | Siete de Oros | *La manilla de oros* |
 | 5° | Treses | Todos los palos, igual valor entre sí |
-| 6° | Doses | Todos los palos |
-| 7° | As de Oros / As de Copas | *Ases falsos* — igual valor entre sí |
-| 8° | Doces (Sotas) | Todos los palos |
-| 9° | Onces (Caballos) | Todos los palos |
-| 10° | Dieces (Reyes) | Todos los palos |
+| 6° | Doses | Todos los palos, igual valor entre sí |
+| 7° | As de Oros / As de Copas | *Anchos falsos* — igual valor entre sí |
+| 8° | Doces | *Reyes* — Todos los palos |
+| 9° | Onces | *Caballos* — Todos los palos |
+| 10° | Dieces | *Sotas* — Todos los palos |
 | 11° | Siete de Copa / Siete de Basto | *Sietes falsos* — igual valor entre sí |
-| 12°→ | Seises, Cincos, Cuatros | En orden descendente por número |
- 
+| 12° | Seises, Cincos, Cuatros | En orden descendente por número |
+
 </details>
+
 ---
  
 ### 03 — Inicio del juego y el reparto
@@ -159,16 +157,17 @@ El valor de envido de una mano se calcula del siguiente modo: si el jugador pose
 La escala de apuestas asciende así: envido vale dos puntos; envido envido, cuatro; real envido suma tres puntos adicionales a lo acumulado; falta envido otorga lo que le reste al equipo rival para completar la partida. Las respuestas posibles son *quiero*, con lo que se disputa, o *no quiero*, con lo que quien cantó cobra el valor mínimo de la apuesta en curso. Si se acepta, cada equipo declara su puntaje en voz alta y gana quien tenga el mayor; ante igualdad, prevalece quien sea mano.
  
 <details>
-<summary><b>💰 Tabla de Apuestas — Envido</b></summary>
-<br>
+<summary><b>Tabla de Apuestas — Envido</b></summary>
+
 | Canto | Si se acepta | Si se rechaza |
 |:---|:---:|:---:|
 | **Envido** | 2 puntos | 1 pto al que cantó |
 | **Envido Envido** | 4 puntos | 2 ptos al que cantó |
 | **Real Envido** | +3 puntos adicionales | 1 pto al que cantó |
 | **Falta Envido** | Lo que le falta al rival | 1 pto al que cantó |
- 
+
 </details>
+
 ---
  
 ### 05 — El truco
@@ -180,16 +179,17 @@ La primera baza la abre el jugador que es mano; las siguientes las inicia quien 
 Cuando la primera baza resulta parda, queda en suspenso y la define quien gane la segunda. Si la segunda también empata, la tercera decide sin importar el resultado de las anteriores. Si las tres bazas son pardas, gana el equipo que tiene la mano. **Irse al mazo** significa que un jugador descarta sus cartas boca abajo resignando la mano; su equipo pierde con el valor vigente de la apuesta.
  
 <details>
-<summary><b>⚔️ Tabla de Apuestas — Truco</b></summary>
-<br>
+<summary><b>Tabla de Apuestas — Truco</b></summary>
+
 | Apuesta | Si se acepta y gana | Si se rechaza |
 |:---|:---:|:---:|
 | **Sin canto** | 1 punto | — |
 | **Truco** | 2 puntos | 1 pto al que cantó |
 | **Retruco** | 3 puntos | 2 ptos al que cantó |
 | **Vale Cuatro** | 4 puntos | 3 ptos al que cantó |
- 
+
 </details>
+
 ---
  
 ### 06 — La flor
@@ -215,18 +215,19 @@ Solo se admiten las señas contempladas en este reglamento; cualquier código pr
 > Está expresamente permitido realizar señas falsas con el propósito de confundir al adversario, asumiendo el riesgo de inducir a error al propio compañero.
  
 <details>
-<summary><b>👁 Señas reglamentarias</b></summary>
-<br>
+<summary><b>Señas reglamentarias</b></summary>
+
 | Seña | Gesto |
 |:---|:---|
 | **As de Espadas** | Elevar levemente ambas cejas |
 | **As de Bastos** | Guiño suave de un ojo |
-| **Siete de Espadas** | Mover apenas la nariz |
-| **Siete de Oros** | Desplazar la comisura de los labios hacia un lado |
-| **Cartas favorables** | Inflar suavemente los cachetes |
-| **Cartas de poco valor** | Fruncir el ceño de forma contenida |
- 
+| **Siete de Espadas** | Desplazar la comisura de los labios hacia la derecha |
+| **Siete de Oros** | Desplazar la comisura de los labios hacia la izquierda |
+| **Todos los tres** | Morderse levemente el labio inferior |
+| **Todos los dos** | Tirar un beso |
+
 </details>
+
 ---
  
 ### 08 — El puntaje y cómo ganar
@@ -253,7 +254,6 @@ En competencias con árbitro, toda disputa sobre una jugada, un canto o la aplic
 *Este reglamento fue consolidado a partir del reglamento oficial de los Juegos Evita (Argentina.gob.ar / ASART) y las fuentes más consistentes del truco jugado en Argentina.*
  
 <br>
-**🥇🗡️ Truquero 🍷🪾**
+** Truquero **
  
 </div>
- 
