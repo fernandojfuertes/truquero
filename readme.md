@@ -1,5 +1,5 @@
 <div align="center">
-# 🥇🗡️ Truquero 🍷🪾
+# Truquero
  
 ### Marcador digital de Truco argentino
  
