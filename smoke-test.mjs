@@ -144,6 +144,16 @@ const titoInDb = await page.evaluate(async (cfg) => {
 }, { url: SB_URL, anon: SB_ANON });
 check('Jugador "Tito" borrado de Supabase (requiere policy DELETE)', titoInDb === 0);
 
+// ===== Jugar rápido: nombres fijos (readonly) y sin opción de guardar =====
+await page.click('#cancelPlayers');
+await page.click('#quickPlayBtn');
+const nameRO = await page.evaluate(() => { const i = document.querySelector('.name'); return i ? i.readOnly : null; });
+check('Quick: nombres no editables (readonly)', nameRO === true);
+await page.locator('body').click();
+for (let i = 0; i < 15; i++) await page.keyboard.press('ArrowLeft');
+await page.waitForTimeout(400);
+check('Quick: NO aparece overlay de guardar', !(await page.isVisible('#winnerOverlay')));
+
 await page.screenshot({ path: 'smoke-history.png' });
 check('Sin errores de página en consola', errors.length === 0);
 if (errors.length) console.log('ERRORES:', errors.slice(0, 5));

@@ -206,6 +206,7 @@ body {
   transition: border-color 0.2s;
   font-family: var(--font);
 }
+.name:read-only { pointer-events: none; }
 .name:focus {
   outline: none;
   border-bottom-color: var(--border);
@@ -1076,6 +1077,8 @@ function buildScorePanel(team, index, { className, showControls }) {
   const nameInput = document.createElement('input');
   nameInput.className = 'name';
   nameInput.value = team.name;
+  // En "Jugar rápido" (no trackeado) los nombres son fijos y no editables.
+  nameInput.readOnly = !rankedConfig.active;
   nameInput.setAttribute('aria-label', `Nombre del equipo ${index + 1}`);
   nameInput.addEventListener('input', e => {
     state.teams[index].name = e.target.value;
