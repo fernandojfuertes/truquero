@@ -21,3 +21,8 @@ yarn-error.log
 # Environment
 .env
 .env.local
+
+# Tooling de test (Playwright) — no forma parte de la app
+package.json
+package-lock.json
+smoke-history.png

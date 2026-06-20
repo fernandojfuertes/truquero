@@ -548,6 +548,39 @@ body {
   .board.gallo { max-width: 496px; }
   .bottom-actions { max-width: 800px; }
 }
+/* === Players selection (roster) === */
+.player-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+  padding: 10px 12px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.player-input:focus { border-color: var(--text); }
+.slot-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.slot {
+  flex: 1; min-width: 64px; padding: 10px 8px;
+  border: 1px dashed var(--border); border-radius: var(--radius);
+  text-align: center; font-size: 13px; color: var(--text-muted);
+  cursor: pointer; background: transparent;
+}
+.slot.filled { border-style: solid; color: var(--text); font-weight: 700; background: var(--bg); }
+.roster-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; min-height: 8px; }
+.roster-chip {
+  padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px;
+  font-size: 13px; cursor: pointer; background: var(--bg); color: var(--text);
+}
+.roster-chip.used { opacity: 0.35; }
+.roster-empty { font-size: 12px; color: var(--text-muted); }
+.add-player-row { display: flex; gap: 8px; }
+.add-player-row .player-input { flex: 1; }
+.add-player-row .modal-btn-secondary { width: 48px; flex: 0 0 auto; padding: 10px; }
+.modal-btn-primary:disabled { opacity: 0.4; cursor: default; }
   </style>
 </head>
 <body>
@@ -591,8 +624,48 @@ body {
         </div>
       </div>
 
+      <div class="modal-actions" style="flex-direction: column; gap: 8px;">
+        <button class="modal-btn-primary" id="quickPlayBtn" onclick="startGame()" style="flex:0 0 auto;">Jugar rápido</button>
+        <button class="modal-btn-secondary" id="trackedPlayBtn" style="flex:0 0 auto;">Jugar con jugadores</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Players selection modal -->
+  <div id="playersModal" class="modal-overlay hidden">
+    <div class="modal-sheet" style="display:flex; flex-direction:column;">
+      <div class="modal-title" style="margin-bottom:12px">Elegí los jugadores</div>
+
+      <div class="team-section">
+        <div class="team-section-label">Formato</div>
+        <div class="size-selector" id="formatSelector">
+          <button class="initial-btn active" data-format="1">1v1</button>
+          <button class="initial-btn" data-format="2">2v2</button>
+          <button class="initial-btn" data-format="3">3v3</button>
+        </div>
+      </div>
+
+      <div class="team-section">
+        <div class="team-section-label">Equipo 1</div>
+        <div id="slots1" class="slot-row"></div>
+      </div>
+      <div class="team-section">
+        <div class="team-section-label">Equipo 2</div>
+        <div id="slots2" class="slot-row"></div>
+      </div>
+
+      <div class="team-section">
+        <div class="team-section-label">Jugadores</div>
+        <div id="rosterChips" class="roster-chips"></div>
+        <div class="add-player-row">
+          <input id="newPlayerInput" class="player-input" type="text" placeholder="Agregar jugador" maxlength="15" />
+          <button class="modal-btn-secondary" id="addPlayerBtn">＋</button>
+        </div>
+      </div>
+
       <div class="modal-actions">
-        <button class="modal-btn-primary" onclick="startGame()">Jugar</button>
+        <button class="modal-btn-secondary" id="cancelPlayers">Atrás</button>
+        <button class="modal-btn-primary" id="confirmPlayers">Jugar</button>
       </div>
     </div>
   </div>
@@ -659,6 +732,8 @@ const state = {
 let rankedConfig = { active: false, teamSize: 1, teams: [[], []] };
 let gameHistory  = [];
 let undoStack    = [];
+let roster       = [];
+let selection    = { format: 1, slots: [[], []] };
 
 // === DOM REFS ===
 const board            = document.getElementById('board');
@@ -674,6 +749,7 @@ const winnerOverlay    = document.getElementById('winnerOverlay');
 const historyOverlay   = document.getElementById('historyOverlay');
 const confirmModal     = document.getElementById('confirmModal');
 const menuModal        = document.getElementById('menuModal');
+const playersModal     = document.getElementById('playersModal');
 
 // === ELEMENT CACHE ===
 let teamElements       = [];
@@ -692,8 +768,22 @@ function loadState() {
     console.warn('AudioContext no disponible:', e);
   }
 }
-function loadHistory() {}
-function saveHistory() {}
+const LS_HISTORY = 'truquero_history_v1';
+const LS_ROSTER  = 'truquero_roster_v1';
+function loadHistory() {
+  try { gameHistory = JSON.parse(localStorage.getItem(LS_HISTORY)) || []; }
+  catch(e) { gameHistory = []; }
+}
+function saveHistory() {
+  try { localStorage.setItem(LS_HISTORY, JSON.stringify(gameHistory)); } catch(e) {}
+}
+function loadRoster() {
+  try { roster = JSON.parse(localStorage.getItem(LS_ROSTER)) || []; }
+  catch(e) { roster = []; }
+}
+function saveRoster() {
+  try { localStorage.setItem(LS_ROSTER, JSON.stringify(roster)); } catch(e) {}
+}
 
 // === THEME ===
 function loadTheme() {
@@ -756,6 +846,24 @@ function soundRemove() { playTone(220, 0.1, 'sine', 0.2); }
 // === HELPERS ===
 function teamKey(players) {
   return [...players].sort().join('+');
+}
+
+function comboKey(ids) { return [...ids].sort().join('+'); }
+function genId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function rosterName(id) { const p = roster.find(r => r.id === id); return p ? p.name : '¿?'; }
+function namesOf(ids) { return (ids || []).map(rosterName); }
+function addRosterPlayer(name) {
+  name = (name || '').trim();
+  if (!name) return null;
+  const existing = roster.find(r => r.name.toLowerCase() === name.toLowerCase());
+  if (existing) return existing;
+  const p = { id: genId(), name };
+  roster.push(p);
+  saveRoster();
+  return p;
 }
 
 function teamLabel(players) {
@@ -1030,7 +1138,7 @@ function addPoints(index, delta, { skipUndo = false } = {}) {
   delta > 0 ? soundAdd() : soundRemove();
   updateScore(index);
   saveState();
-  if (team.score === state.TARGET && state.teams.length === 2 && rankedConfig.active && state.TARGET === 30) {
+  if (team.score === state.TARGET && state.teams.length === 2 && rankedConfig.active) {
     showWinnerOverlay(index);
   }
 }
@@ -1057,7 +1165,7 @@ function resetAll() {
 // === WINNER OVERLAY ===
 function showWinnerOverlay(winnerIndex) {
   pendingWinnerIndex = winnerIndex;
-  const winner = rankedConfig.teams[winnerIndex];
+  const winner = namesOf(rankedConfig.teams[winnerIndex]);
 
   document.getElementById('winnerLabel').textContent =
     rankedConfig.teamSize === 1 ? 'Ganó' : 'Ganaron';
@@ -1072,11 +1180,12 @@ function saveGame(winnerIndex) {
   gameHistory.unshift({
     date:      new Date().toISOString(),
     teamSize:  rankedConfig.teamSize,
-    teams:     rankedConfig.teams.map((players, i) => ({
-      players,
-      score: state.teams[i].score
+    teams:     rankedConfig.teams.map((ids, i) => ({
+      playerIds: ids,
+      names:     namesOf(ids),
+      score:     state.teams[i].score
     })),
-    winnerKey: teamKey(rankedConfig.teams[winnerIndex])
+    winnerKey: comboKey(rankedConfig.teams[winnerIndex])
   });
   saveHistory();
 }
@@ -1096,6 +1205,40 @@ function renderHistoryView() {
     return;
   }
 
+  let html = '';
+
+  // --- Estadísticas individuales (todas las partidas, sin importar con quién) ---
+  const indiv = {};
+  gameHistory.forEach(game => {
+    game.teams.forEach(team => {
+      const ids = team.playerIds || [];
+      const isWinner = comboKey(ids) === game.winnerKey;
+      ids.forEach((id, idx) => {
+        if (!indiv[id]) indiv[id] = { name: rosterName(id) || team.names?.[idx] || '¿?', wins: 0, games: 0 };
+        indiv[id].games++;
+        if (isWinner) indiv[id].wins++;
+      });
+    });
+  });
+  const indivSorted = Object.values(indiv).sort((a, b) =>
+    b.wins - a.wins || (b.wins / b.games) - (a.wins / a.games));
+
+  if (indivSorted.length) {
+    html += '<div class="history-section-title">Individual</div>';
+    html += '<div class="history-stats">';
+    indivSorted.forEach(s => {
+      const rate = s.games ? Math.round(s.wins / s.games * 100) : 0;
+      html += `
+        <div class="stat-row">
+          <span class="stat-name">${s.name}</span>
+          <span class="stat-record">${s.wins}G&nbsp;${s.games - s.wins}P</span>
+          <span class="stat-rate">${rate}%</span>
+        </div>`;
+    });
+    html += '</div>';
+  }
+
+  // --- Combinaciones + partidas, agrupadas por formato ---
   const byMode = {};
   gameHistory.forEach(game => {
     const size = game.teamSize || 1;
@@ -1103,69 +1246,74 @@ function renderHistoryView() {
     byMode[size].push(game);
   });
 
-  let html = '';
+  const FORMAT_LABEL = { 1: '1v1 (mano a mano)', 2: 'Parejas (2v2)', 3: 'Triejas (3v3)' };
 
   [1, 2, 3].forEach(size => {
     const games = byMode[size];
     if (!games) return;
 
-    const modeLabel = `${size}v${size}`;
+    const modeLabel = FORMAT_LABEL[size];
     const page      = historyPage[size] || 1;
     const shown     = page * MAX_HISTORY_PAGE;
 
-    const stats = {};
-    games.forEach(game => {
-      game.teams.forEach(team => {
-        const key = teamKey(team.players);
-        if (!stats[key]) stats[key] = { label: teamLabel(team.players), wins: 0, games: 0 };
-        stats[key].games++;
-        if (key === game.winnerKey) stats[key].wins++;
+    // Las combinaciones (pareja/trieja) solo aportan estadística propia con 2+ jugadores;
+    // en 1v1 la "combinación" es el individuo y ya está arriba.
+    if (size !== 1) {
+      const stats = {};
+      games.forEach(game => {
+        game.teams.forEach(team => {
+          const ids = team.playerIds || [];
+          const key = comboKey(ids);
+          if (!stats[key]) stats[key] = { label: teamLabel(namesOf(ids)), wins: 0, games: 0 };
+          stats[key].games++;
+          if (key === game.winnerKey) stats[key].wins++;
+        });
       });
-    });
 
-    Object.keys(stats).forEach(key => {
-      let streak = 0;
-      for (const game of games) {
-        if (!game.teams.some(t => teamKey(t.players) === key)) continue;
-        if (game.winnerKey === key) streak++;
-        else break;
-      }
-      stats[key].streak  = streak;
-      stats[key].winRate = stats[key].games
-        ? Math.round(stats[key].wins / stats[key].games * 100) : 0;
-    });
+      Object.keys(stats).forEach(key => {
+        let streak = 0;
+        for (const game of games) {
+          if (!game.teams.some(t => comboKey(t.playerIds || []) === key)) continue;
+          if (game.winnerKey === key) streak++;
+          else break;
+        }
+        stats[key].streak  = streak;
+        stats[key].winRate = stats[key].games
+          ? Math.round(stats[key].wins / stats[key].games * 100) : 0;
+      });
 
-    const sorted = Object.values(stats).sort((a, b) => b.wins - a.wins || b.winRate - a.winRate);
+      const sorted = Object.values(stats).sort((a, b) => b.wins - a.wins || b.winRate - a.winRate);
 
-    html += `<div class="history-section-title">${modeLabel} — Estadísticas</div>`;
-    html += '<div class="history-stats">';
-    sorted.forEach(s => {
-      const streak = s.streak >= 2
-        ? `<span class="stat-streak">${s.streak} seguidas</span>` : '';
-      html += `
-        <div class="stat-row">
-          <span class="stat-name">${s.label}</span>
-          <span class="stat-record">${s.wins}G&nbsp;${s.games - s.wins}P</span>
-          <span class="stat-rate">${s.winRate}%</span>
-          ${streak}
-        </div>`;
-    });
-    html += '</div>';
+      html += `<div class="history-section-title" style="margin-top:16px">${modeLabel} — Estadísticas</div>`;
+      html += '<div class="history-stats">';
+      sorted.forEach(s => {
+        const streak = s.streak >= 2
+          ? `<span class="stat-streak">${s.streak} seguidas</span>` : '';
+        html += `
+          <div class="stat-row">
+            <span class="stat-name">${s.label}</span>
+            <span class="stat-record">${s.wins}G&nbsp;${s.games - s.wins}P</span>
+            <span class="stat-rate">${s.winRate}%</span>
+            ${streak}
+          </div>`;
+      });
+      html += '</div>';
+    }
 
     html += `<div class="history-section-title" style="margin-top:16px">${modeLabel} — Partidas</div>`;
     html += '<div class="history-games">';
     games.slice(0, shown).forEach(game => {
       const d       = new Date(game.date);
       const dateStr = `${d.getDate()}/${d.getMonth() + 1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-      const winner  = game.teams.find(t => teamKey(t.players) === game.winnerKey);
-      const loser   = game.teams.find(t => teamKey(t.players) !== game.winnerKey);
+      const winner  = game.teams.find(t => comboKey(t.playerIds || []) === game.winnerKey);
+      const loser   = game.teams.find(t => comboKey(t.playerIds || []) !== game.winnerKey);
       html += `
         <div class="game-row">
           <span class="game-date">${dateStr}</span>
           <span class="game-result">
-            <span class="game-winner">${teamLabel(winner?.players)}</span>
+            <span class="game-winner">${teamLabel(namesOf(winner?.playerIds))}</span>
             <span class="game-vs"> vs </span>
-            <span class="game-loser">${teamLabel(loser?.players)}</span>
+            <span class="game-loser">${teamLabel(namesOf(loser?.playerIds))}</span>
           </span>
           <span class="game-score">${winner?.score ?? 0}–${loser?.score ?? 0}</span>
         </div>`;
@@ -1192,7 +1340,7 @@ function renderHistoryView() {
 // === KEYBOARD SHORTCUTS ===
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
-  if ([winnerOverlay, confirmModal, menuModal].some(m => !m.classList.contains('hidden'))) return;
+  if ([winnerOverlay, confirmModal, menuModal, playersModal, initialModal].some(m => !m.classList.contains('hidden'))) return;
 
   const isGallo = state.teams.length === 3;
 
@@ -1246,6 +1394,49 @@ if (toggleDarkBtn) toggleDarkBtn.addEventListener('click', toggleTheme);
 if (toggleTargetBtn) toggleTargetBtn.addEventListener('click', toggleTarget);
 if (historyBtn) historyBtn.addEventListener('click', openHistory);
 
+// --- Players selection wiring ---
+document.getElementById('trackedPlayBtn').addEventListener('click', openPlayersModal);
+
+document.getElementById('formatSelector').addEventListener('click', e => {
+  const btn = e.target.closest('.initial-btn');
+  if (!btn) return;
+  selection.format = parseInt(btn.dataset.format);
+  document.querySelectorAll('#formatSelector .initial-btn').forEach(b =>
+    b.classList.toggle('active', b === btn));
+  selection.slots = selection.slots.map(s => s.slice(0, selection.format));
+  renderPlayersSelection();
+});
+
+document.getElementById('rosterChips').addEventListener('click', e => {
+  const chip = e.target.closest('.roster-chip');
+  if (chip) assignPlayer(chip.dataset.id);
+});
+
+['slots1', 'slots2'].forEach(rowId => {
+  document.getElementById(rowId).addEventListener('click', e => {
+    const slot = e.target.closest('.slot.filled');
+    if (slot) removeFromSlot(parseInt(slot.dataset.team), parseInt(slot.dataset.slot));
+  });
+});
+
+function addPlayerFromInput() {
+  const input = document.getElementById('newPlayerInput');
+  const p = addRosterPlayer(input.value);
+  input.value = '';
+  if (p) renderPlayersSelection();
+  input.focus();
+}
+document.getElementById('addPlayerBtn').addEventListener('click', addPlayerFromInput);
+document.getElementById('newPlayerInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addPlayerFromInput(); }
+});
+
+document.getElementById('confirmPlayers').addEventListener('click', startTrackedGame);
+document.getElementById('cancelPlayers').addEventListener('click', () => {
+  playersModal.classList.add('hidden');
+  initialModal.classList.remove('hidden');
+});
+
 document.getElementById('saveGameBtn').addEventListener('click', () => {
   if (pendingWinnerIndex >= 0) {
     saveGame(pendingWinnerIndex);
@@ -1291,6 +1482,8 @@ document.getElementById('confirmModalResetConfig').addEventListener('click', () 
   rankedConfig = { active: false, teamSize: 1, teams: [[], []] };
   initialMode = 'dupla';
   initialPoints = 30;
+  const tb = document.getElementById('trackedPlayBtn');
+  if (tb) tb.style.display = '';
   initialModal.classList.remove('hidden');
   saveState();
 });
@@ -1314,13 +1507,15 @@ function updateInitialCounter() {
 }
 
 function selectInitialMode(mode, btn) {
-  console.log('selectInitialMode called:', mode);
   initialMode = mode;
   const parent = btn.parentElement;
   parent.querySelectorAll('.initial-btn').forEach(b => {
     b.classList.remove('active');
   });
   btn.classList.add('active');
+  // El modo Gallo (3 jugadores libres) no se trackea en esta fase.
+  const tracked = document.getElementById('trackedPlayBtn');
+  if (tracked) tracked.style.display = mode === 'gallo' ? 'none' : '';
 }
 
 function selectInitialPoints(points, btn) {
@@ -1334,19 +1529,103 @@ function selectInitialPoints(points, btn) {
   btn.classList.add('active');
 }
 
+// Partida rápida (sin trackear): nombres por defecto, no entra al historial.
 function startGame() {
   state.TARGET = initialPoints;
+  state.teams = [
+    { name: DEFAULT_NAMES[0], score: 0 },
+    { name: DEFAULT_NAMES[1], score: 0 }
+  ];
+  state.mano = 0;
+  savedGallo = null;
   if (initialMode === 'gallo') {
     state.teams[0].name = 'Yo';
     state.teams[1].name = 'El';
     state.teams.push({ name: 'Gallo', score: 0 });
-    rankedConfig = { active: true, teamSize: 1, teams: [['Yo'], ['El'], ['Gallo']] };
-  } else {
-    state.teams[0].name = DEFAULT_NAMES[0];
-    state.teams[1].name = DEFAULT_NAMES[1];
-    rankedConfig = { active: true, teamSize: 1, teams: [[DEFAULT_NAMES[0]], [DEFAULT_NAMES[1]]] };
   }
+  rankedConfig = { active: false, teamSize: 1, teams: [[], []] };
+  undoStack = [];
   initialModal.classList.add('hidden');
+  render();
+  saveState();
+}
+
+// === PLAYERS SELECTION (partidas con historial) ===
+function openPlayersModal() {
+  selection = { format: 1, slots: [[], []] };
+  document.querySelectorAll('#formatSelector .initial-btn').forEach(b =>
+    b.classList.toggle('active', parseInt(b.dataset.format) === selection.format));
+  renderPlayersSelection();
+  initialModal.classList.add('hidden');
+  playersModal.classList.remove('hidden');
+}
+
+function renderPlayersSelection() {
+  const fmt = selection.format;
+  [1, 2].forEach(teamNum => {
+    const ids = selection.slots[teamNum - 1];
+    let h = '';
+    for (let i = 0; i < fmt; i++) {
+      const id = ids[i];
+      h += id != null
+        ? `<div class="slot filled" data-team="${teamNum}" data-slot="${i}">${rosterName(id)}</div>`
+        : `<div class="slot" data-team="${teamNum}" data-slot="${i}">+</div>`;
+    }
+    document.getElementById('slots' + teamNum).innerHTML = h;
+  });
+
+  const chips = document.getElementById('rosterChips');
+  if (!roster.length) {
+    chips.innerHTML = '<span class="roster-empty">Agregá jugadores abajo 👇</span>';
+  } else {
+    const used = new Set([...selection.slots[0], ...selection.slots[1]]);
+    chips.innerHTML = roster.map(p =>
+      `<div class="roster-chip ${used.has(p.id) ? 'used' : ''}" data-id="${p.id}">${p.name}</div>`
+    ).join('');
+  }
+
+  const full = selection.slots[0].length === fmt && selection.slots[1].length === fmt;
+  document.getElementById('confirmPlayers').disabled = !full;
+}
+
+function assignPlayer(id) {
+  const used = new Set([...selection.slots[0], ...selection.slots[1]]);
+  if (used.has(id)) return;
+  const fmt = selection.format;
+  for (let t = 0; t < 2; t++) {
+    if (selection.slots[t].length < fmt) {
+      selection.slots[t].push(id);
+      renderPlayersSelection();
+      return;
+    }
+  }
+}
+
+function removeFromSlot(teamNum, slotIdx) {
+  const ids = selection.slots[teamNum - 1];
+  if (ids[slotIdx] != null) {
+    ids.splice(slotIdx, 1);
+    renderPlayersSelection();
+  }
+}
+
+function startTrackedGame() {
+  const fmt = selection.format;
+  const ids1 = selection.slots[0].slice(0, fmt);
+  const ids2 = selection.slots[1].slice(0, fmt);
+  if (ids1.length < fmt || ids2.length < fmt) return;
+
+  state.TARGET = initialPoints;
+  state.teams = [
+    { name: fmt === 1 ? rosterName(ids1[0]) : teamInitials(namesOf(ids1)), score: 0 },
+    { name: fmt === 1 ? rosterName(ids2[0]) : teamInitials(namesOf(ids2)), score: 0 }
+  ];
+  state.mano = 0;
+  savedGallo = null;
+  rankedConfig = { active: true, teamSize: fmt, teams: [ids1, ids2] };
+  undoStack = [];
+
+  playersModal.classList.add('hidden');
   render();
   saveState();
 }
@@ -1358,7 +1637,7 @@ function closeMenuModal() {
   menuModal.classList.add('hidden');
 }
 
-menuToggle.addEventListener('click', () => {
+if (menuToggle) menuToggle.addEventListener('click', () => {
   menuModal.classList.remove('hidden');
 });
 
@@ -1370,6 +1649,7 @@ menuModal.querySelectorAll('.menu-item').forEach(item => {
 loadTheme();
 loadState();
 loadHistory();
+loadRoster();
 // Initial modal is shown by default
   </script>
 </body>
