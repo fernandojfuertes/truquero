@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"/>
-  <title>🗡️🥇~ Truquero ~🪾🍷</title>
+  <title>Truquero</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗡️</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%231a1a1a'/><g stroke='%23ffffff' stroke-width='3' fill='none'><rect x='30' y='30' width='40' height='40'/><rect x='76' y='30' width='40' height='40'/><rect x='122' y='30' width='40' height='40'/><rect x='30' y='76' width='40' height='40'/><rect x='76' y='76' width='40' height='40'/><rect x='122' y='76' width='40' height='40'/><line x1='30' y1='30' x2='70' y2='70'/><line x1='76' y1='30' x2='116' y2='70'/><line x1='122' y1='30' x2='162' y2='70'/><line x1='30' y1='76' x2='70' y2='116'/><line x1='76' y1='76' x2='116' y2='116'/><line x1='122' y1='76' x2='162' y2='116'/></g></svg>">
   <style>
@@ -34,7 +34,7 @@ body.light {
   --btn-bg: #000000;
   --btn-text: #FFFFFF;
 }
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
 html, body {
   height: 100dvh;
   overflow: hidden;
@@ -609,7 +609,7 @@ body {
   <!-- Initial config modal -->
   <div id="initialModal" class="modal-overlay">
     <div class="modal-sheet">
-      <div class="modal-title" style="margin-bottom:20px">Configurar Partida</div>
+      <div class="modal-title" style="margin-bottom:20px">Configurar Anotador</div>
 
       <div class="team-section">
         <div class="team-section-label">Modalidad</div>
@@ -636,8 +636,7 @@ body {
   <!-- Setup modal -->
   <div id="setupModal" class="modal-overlay hidden">
     <div class="modal-sheet">
-      <div class="modal-title" style="margin-bottom:16px">Jugar por puntos</div>
-      <div class="setup-size-label">Jugadores por equipo</div>
+      <div class="modal-title" style="margin-bottom:16px">Jugadores por equipo</div>
       <div class="size-selector">
         <button class="size-btn active" data-size="1">1</button>
         <button class="size-btn" data-size="2">2</button>
@@ -650,6 +649,10 @@ body {
       <div class="team-section">
         <div class="team-section-label">Equipo 2</div>
         <div id="team2Inputs" class="team-inputs"></div>
+      </div>
+      <div class="team-section" id="galloSection" style="display:none;">
+        <div class="team-section-label">Gallo</div>
+        <div id="galloInput" class="team-inputs"></div>
       </div>
       <div class="modal-actions">
         <button class="modal-btn-secondary" id="cancelSetup">Atrás</button>
@@ -686,12 +689,12 @@ body {
 
   <!-- Confirm reset modal -->
   <div id="confirmModal" class="modal-overlay hidden">
-    <div class="modal-sheet">
-      <div class="modal-title" style="margin-bottom:12px">Reiniciar</div>
-      <p style="color:var(--text-muted);font-size:14px;margin:0 0 4px">¿Reiniciar los puntos?</p>
-      <div class="modal-actions">
-        <button class="modal-btn-secondary" id="confirmModalCancel">Cancelar</button>
-        <button class="modal-btn-primary" id="confirmModalOk">Reiniciar</button>
+    <div class="modal-sheet" style="display: flex; flex-direction: column;">
+      <div class="modal-title" style="margin-bottom:12px">¿Reiniciar?</div>
+      <div class="modal-actions" style="flex-direction: column; gap: 8px; flex: 1; justify-content: flex-end;">
+        <button class="modal-btn-primary" id="confirmModalResetPoints" style="flex: 0 0 auto;">Reiniciar Puntos</button>
+        <button class="modal-btn-primary" id="confirmModalResetConfig" style="flex: 0 0 auto;">Reiniciar Anotador</button>
+        <button class="modal-btn-secondary" id="confirmModalCancel" style="flex: 0 0 auto; margin-top: 8px;">Cancelar</button>
       </div>
     </div>
   </div>
@@ -705,6 +708,7 @@ const GALLO_ROTATION     = [2, 0, 1];
 const MAX_HISTORY_PAGE   = 20;
 const UNDO_LIMIT         = 10;
 const DEFAULT_NAMES      = ['Nosotros', 'Ellos'];
+const GALLO_NAMES        = ['Yo', 'El', 'Gallo'];
 
 // === STATE ===
 const state = {
@@ -1121,7 +1125,14 @@ function resetAll() {
 // === SETUP MODAL ===
 function openSetupModal() {
   setupSize = 1;
-  refreshSizeBtns();
+  const isGallo = initialMode === 'gallo';
+  const sizeSelector = setupModal.querySelector('.size-selector');
+  if (isGallo) {
+    sizeSelector.style.display = 'none';
+  } else {
+    sizeSelector.style.display = '';
+    refreshSizeBtns();
+  }
   refreshPlayerInputs();
   setupModal.classList.remove('hidden');
 }
@@ -1133,6 +1144,9 @@ function refreshSizeBtns() {
 }
 
 function refreshPlayerInputs() {
+  const isGallo = initialMode === 'gallo';
+  const placeholders = isGallo ? ['Yo', 'El'] : ['Nosotros', 'Ellos'];
+
   [1, 2].forEach(teamNum => {
     const container = document.getElementById(`team${teamNum}Inputs`);
     container.innerHTML = '';
@@ -1140,12 +1154,31 @@ function refreshPlayerInputs() {
       const input = document.createElement('input');
       input.type        = 'text';
       input.className   = 'player-input';
-      input.placeholder = teamNum === 1 ? 'Nosotros' : 'Ellos';
+      input.placeholder = placeholders[teamNum - 1];
       input.maxLength   = 15;
       input.setAttribute('aria-label', `Nombre del jugador ${i + 1} del equipo ${teamNum}`);
       container.appendChild(input);
     }
   });
+
+  // Mostrar/ocultar sección del Gallo
+  const galloSection = document.getElementById('galloSection');
+  if (isGallo) {
+    galloSection.style.display = '';
+    const galloInput = document.getElementById('galloInput');
+    galloInput.innerHTML = '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'player-input';
+    input.placeholder = 'Gallo';
+    input.maxLength = 15;
+    input.id = 'galloNameInput';
+    input.setAttribute('aria-label', 'Nombre del Gallo');
+    galloInput.appendChild(input);
+  } else {
+    galloSection.style.display = 'none';
+  }
+
   setTimeout(() => setupModal.querySelector('.player-input')?.focus(), 50);
 }
 
@@ -1156,10 +1189,20 @@ function confirmSetup() {
 
   const names1 = getNames(1);
   const names2 = getNames(2);
+  const isGallo = initialMode === 'gallo';
 
-  rankedConfig          = { active: true, teamSize: setupSize, teams: [names1, names2] };
-  state.teams[0].name   = setupSize === 1 ? teamLabel(names1) : teamInitials(names1);
-  state.teams[1].name   = setupSize === 1 ? teamLabel(names2) : teamInitials(names2);
+  if (isGallo) {
+    const galloInput = document.getElementById('galloNameInput');
+    const galloName = galloInput.value.trim() || galloInput.placeholder;
+    rankedConfig = { active: true, teamSize: setupSize, teams: [names1, names2, [galloName]] };
+    state.teams[0].name = setupSize === 1 ? teamLabel(names1) : teamInitials(names1);
+    state.teams[1].name = setupSize === 1 ? teamLabel(names2) : teamInitials(names2);
+    state.teams[2].name = galloName;
+  } else {
+    rankedConfig = { active: true, teamSize: setupSize, teams: [names1, names2] };
+    state.teams[0].name = setupSize === 1 ? teamLabel(names1) : teamInitials(names1);
+    state.teams[1].name = setupSize === 1 ? teamLabel(names2) : teamInitials(names2);
+  }
 
   setupModal.classList.add('hidden');
   render();
@@ -1398,9 +1441,32 @@ document.getElementById('closeHistory').addEventListener('click', () => {
   historyOverlay.classList.add('hidden');
 });
 
-document.getElementById('confirmModalOk').addEventListener('click', () => {
+document.getElementById('confirmModalResetPoints').addEventListener('click', () => {
   confirmModal.classList.add('hidden');
-  doReset();
+  const isGallo = state.teams.length === 3;
+  const names = isGallo ? GALLO_NAMES : DEFAULT_NAMES;
+  state.teams.forEach((t, i) => {
+    t.score = 0;
+    t.name = names[i];
+  });
+  undoStack = [];
+  render();
+  saveState();
+});
+document.getElementById('confirmModalResetConfig').addEventListener('click', () => {
+  confirmModal.classList.add('hidden');
+  state.teams = [
+    { name: DEFAULT_NAMES[0], score: 0 },
+    { name: DEFAULT_NAMES[1], score: 0 }
+  ];
+  state.TARGET = 30;
+  state.mano = 0;
+  undoStack = [];
+  rankedConfig = { active: false, teamSize: 1, teams: [[], []] };
+  initialMode = 'dupla';
+  initialPoints = 30;
+  initialModal.classList.remove('hidden');
+  saveState();
 });
 document.getElementById('confirmModalCancel').addEventListener('click', () => {
   confirmModal.classList.add('hidden');
@@ -1446,6 +1512,8 @@ function startGame() {
   console.log('startGame called, mode:', initialMode, 'points:', initialPoints);
   state.TARGET = initialPoints;
   if (initialMode === 'gallo') {
+    state.teams[0].name = 'Yo';
+    state.teams[1].name = 'El';
     state.teams.push({ name: 'Gallo', score: 0 });
   }
   initialModal.classList.add('hidden');
