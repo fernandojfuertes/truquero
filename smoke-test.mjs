@@ -112,10 +112,9 @@ await page.evaluate(() => localStorage.clear());
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(2500); // esperar sync con Supabase
 check('Modal inicial visible tras reload', await page.isVisible('#initialModal'));
-await page.click('#quickPlayBtn');
-await page.click('#historyBtn');
-const histCloud = await page.textContent('#historyContent');
-check('Historial recuperado desde Supabase (caché local vacía)', /Individual/.test(histCloud) && /Nano/.test(histCloud));
+// Con la caché vacía, syncHistory repuebla localStorage desde Supabase
+const cloudCache = await page.evaluate(() => { try { return localStorage.getItem('truquero_history_v1') || ''; } catch { return ''; } });
+check('Historial recuperado desde Supabase (caché vacía → repoblada)', /Nano/.test(cloudCache) && /gallo/.test(cloudCache));
 // Verificación directa contra la API REST de Supabase
 const sbGames = await page.evaluate(async (cfg) => {
   const r = await fetch(`${cfg.url}/rest/v1/games?select=id`, {
@@ -126,10 +125,7 @@ const sbGames = await page.evaluate(async (cfg) => {
 check('Supabase tiene partidas guardadas (>=3)', sbGames >= 3);
 
 // ===== Borrar jugador desde la UI =====
-await page.click('#closeHistory'); // cerrar el historial que quedó abierto
-await page.click('#resetBtn');
-await page.click('#confirmModalResetConfig');
-await page.click('#trackedPlayBtn');
+await page.click('#trackedPlayBtn'); // el modal inicial sigue visible tras el reload
 await page.waitForTimeout(800);
 check('Chip "Tito" presente antes de borrar', /Tito/.test(await page.textContent('#rosterChips')));
 await page.click('#editRosterBtn');
@@ -149,6 +145,7 @@ await page.click('#cancelPlayers');
 await page.click('#quickPlayBtn');
 const nameRO = await page.evaluate(() => { const i = document.querySelector('.name'); return i ? i.readOnly : null; });
 check('Quick: nombres no editables (readonly)', nameRO === true);
+check('Quick: botón Historial oculto', !(await page.isVisible('#historyBtn')));
 await page.locator('body').click();
 for (let i = 0; i < 15; i++) await page.keyboard.press('ArrowLeft');
 await page.waitForTimeout(400);

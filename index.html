@@ -761,6 +761,7 @@ let undoStack    = [];
 let roster       = [];
 let selection    = { format: 1, slots: [[], []] };
 let rosterEditMode = false;
+let quickMode    = false;   // true en "Jugar rápido" (sin trackear)
 
 // === DOM REFS ===
 const board            = document.getElementById('board');
@@ -1077,8 +1078,8 @@ function buildScorePanel(team, index, { className, showControls }) {
   const nameInput = document.createElement('input');
   nameInput.className = 'name';
   nameInput.value = team.name;
-  // En "Jugar rápido" (no trackeado) los nombres son fijos y no editables.
-  nameInput.readOnly = !rankedConfig.active;
+  // En "Jugar rápido" los nombres son fijos y no editables.
+  nameInput.readOnly = quickMode;
   nameInput.setAttribute('aria-label', `Nombre del equipo ${index + 1}`);
   nameInput.addEventListener('input', e => {
     state.teams[index].name = e.target.value;
@@ -1195,7 +1196,7 @@ function render() {
   const isGallo = state.teams.length === 3;
   if (toggleGalloBtn) toggleGalloBtn.textContent = 'Gallo';
   if (siguienteManoBtn) siguienteManoBtn.style.display = isGallo ? '' : 'none';
-  if (historyBtn) historyBtn.style.display = '';
+  if (historyBtn) historyBtn.style.display = quickMode ? 'none' : '';
 
   if (isGallo) {
     board.className = 'board gallo';
@@ -1713,6 +1714,7 @@ function startGame() {
   }
   rankedConfig = { active: false, teamSize: 1, teams: [[], []] };
   undoStack = [];
+  quickMode = true;
   initialModal.classList.add('hidden');
   render();
   saveState();
@@ -1810,6 +1812,7 @@ function startTrackedGame() {
   state.mano   = 0;
   savedGallo   = null;
   undoStack    = [];
+  quickMode    = false;
 
   if (selection.mode === 'gallo') {
     const teams = selection.slots.map(s => s.slice(0, 1));   // [[id],[id],[id]]
