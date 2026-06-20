@@ -409,28 +409,7 @@ body {
 }
 .modal-btn-primary { background: var(--btn-bg); color: var(--btn-text); }
 .modal-btn-secondary { background: var(--bg); color: var(--text); }
-.setup-size-label {
-  font-size: clamp(9px, 1.2vh, 11px);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-  font-weight: 600;
-}
 .size-selector { display: flex; gap: 8px; margin-bottom: 20px; }
-.size-btn {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.size-btn.active { background: var(--btn-bg); color: var(--btn-text); }
 .initial-btn {
   flex: 1;
   padding: 10px;
@@ -456,21 +435,6 @@ body {
   margin-bottom: 8px;
   font-weight: 600;
 }
-.team-inputs { display: flex; flex-direction: column; gap: 6px; }
-.player-input {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: 14px;
-  padding: 10px 12px;
-  font-family: var(--font);
-  outline: none;
-  transition: border-color 0.15s;
-}
-.player-input:focus { border-color: var(--text); }
-.player-input.input-error { border-color: #e55; }
 .winner-content { text-align: center; padding: 8px 0 4px; }
 .winner-label {
   font-size: clamp(9px, 1.2vh, 11px);
@@ -609,7 +573,7 @@ body {
   <!-- Initial config modal -->
   <div id="initialModal" class="modal-overlay">
     <div class="modal-sheet">
-      <div class="modal-title" style="margin-bottom:20px">Configurar Anotador</div>
+      <div class="modal-title" style="margin-bottom:20px">Truquero</div>
 
       <div class="team-section">
         <div class="team-section-label">Modalidad</div>
@@ -628,35 +592,7 @@ body {
       </div>
 
       <div class="modal-actions">
-        <button class="modal-btn-primary" onclick="startGame()">Siguiente</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Setup modal -->
-  <div id="setupModal" class="modal-overlay hidden">
-    <div class="modal-sheet">
-      <div class="modal-title" style="margin-bottom:16px">Jugadores por equipo</div>
-      <div class="size-selector">
-        <button class="size-btn active" data-size="1">1</button>
-        <button class="size-btn" data-size="2">2</button>
-        <button class="size-btn" data-size="3">3</button>
-      </div>
-      <div class="team-section">
-        <div class="team-section-label">Equipo 1</div>
-        <div id="team1Inputs" class="team-inputs"></div>
-      </div>
-      <div class="team-section">
-        <div class="team-section-label">Equipo 2</div>
-        <div id="team2Inputs" class="team-inputs"></div>
-      </div>
-      <div class="team-section" id="galloSection" style="display:none;">
-        <div class="team-section-label">Gallo</div>
-        <div id="galloInput" class="team-inputs"></div>
-      </div>
-      <div class="modal-actions">
-        <button class="modal-btn-secondary" id="cancelSetup">Atrás</button>
-        <button class="modal-btn-primary" id="confirmSetup">Jugar</button>
+        <button class="modal-btn-primary" onclick="startGame()">Jugar</button>
       </div>
     </div>
   </div>
@@ -732,10 +668,8 @@ const siguienteManoBtn = document.getElementById('siguienteMano');
 const resetBtn         = document.getElementById('resetBtn');
 const toggleDarkBtn    = document.getElementById('toggleDarkMode');
 const toggleTargetBtn  = document.getElementById('toggleTarget');
-const byPointsBtn      = document.getElementById('byPointsBtn');
 const historyBtn       = document.getElementById('historyBtn');
 const initialModal     = document.getElementById('initialModal');
-const setupModal       = document.getElementById('setupModal');
 const winnerOverlay    = document.getElementById('winnerOverlay');
 const historyOverlay   = document.getElementById('historyOverlay');
 const confirmModal     = document.getElementById('confirmModal');
@@ -745,7 +679,6 @@ const menuModal        = document.getElementById('menuModal');
 let teamElements       = [];
 let savedGallo         = null;
 let pendingWinnerIndex = -1;
-let setupSize          = 1;
 let historyPage        = {};
 let initialMode        = 'dupla';
 let initialPoints      = 30;
@@ -1037,7 +970,6 @@ function render() {
   const isGallo = state.teams.length === 3;
   if (toggleGalloBtn) toggleGalloBtn.textContent = 'Gallo';
   if (siguienteManoBtn) siguienteManoBtn.style.display = isGallo ? '' : 'none';
-  if (byPointsBtn) byPointsBtn.style.display = isGallo ? 'none' : '';
   if (historyBtn) historyBtn.style.display = isGallo ? 'none' : '';
 
   if (isGallo) {
@@ -1120,93 +1052,6 @@ function doReset() {
 
 function resetAll() {
   confirmModal.classList.remove('hidden');
-}
-
-// === SETUP MODAL ===
-function openSetupModal() {
-  setupSize = 1;
-  const isGallo = initialMode === 'gallo';
-  const sizeSelector = setupModal.querySelector('.size-selector');
-  if (isGallo) {
-    sizeSelector.style.display = 'none';
-  } else {
-    sizeSelector.style.display = '';
-    refreshSizeBtns();
-  }
-  refreshPlayerInputs();
-  setupModal.classList.remove('hidden');
-}
-
-function refreshSizeBtns() {
-  document.querySelectorAll('.size-btn').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.size) === setupSize);
-  });
-}
-
-function refreshPlayerInputs() {
-  const isGallo = initialMode === 'gallo';
-  const placeholders = isGallo ? ['Yo', 'El'] : ['Nosotros', 'Ellos'];
-
-  [1, 2].forEach(teamNum => {
-    const container = document.getElementById(`team${teamNum}Inputs`);
-    container.innerHTML = '';
-    for (let i = 0; i < setupSize; i++) {
-      const input = document.createElement('input');
-      input.type        = 'text';
-      input.className   = 'player-input';
-      input.placeholder = placeholders[teamNum - 1];
-      input.maxLength   = 15;
-      input.setAttribute('aria-label', `Nombre del jugador ${i + 1} del equipo ${teamNum}`);
-      container.appendChild(input);
-    }
-  });
-
-  // Mostrar/ocultar sección del Gallo
-  const galloSection = document.getElementById('galloSection');
-  if (isGallo) {
-    galloSection.style.display = '';
-    const galloInput = document.getElementById('galloInput');
-    galloInput.innerHTML = '';
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'player-input';
-    input.placeholder = 'Gallo';
-    input.maxLength = 15;
-    input.id = 'galloNameInput';
-    input.setAttribute('aria-label', 'Nombre del Gallo');
-    galloInput.appendChild(input);
-  } else {
-    galloSection.style.display = 'none';
-  }
-
-  setTimeout(() => setupModal.querySelector('.player-input')?.focus(), 50);
-}
-
-function confirmSetup() {
-  const getNames = n =>
-    [...document.querySelectorAll(`#team${n}Inputs .player-input`)]
-      .map(i => i.value.trim() || i.placeholder);
-
-  const names1 = getNames(1);
-  const names2 = getNames(2);
-  const isGallo = initialMode === 'gallo';
-
-  if (isGallo) {
-    const galloInput = document.getElementById('galloNameInput');
-    const galloName = galloInput.value.trim() || galloInput.placeholder;
-    rankedConfig = { active: true, teamSize: setupSize, teams: [names1, names2, [galloName]] };
-    state.teams[0].name = setupSize === 1 ? teamLabel(names1) : teamInitials(names1);
-    state.teams[1].name = setupSize === 1 ? teamLabel(names2) : teamInitials(names2);
-    state.teams[2].name = galloName;
-  } else {
-    rankedConfig = { active: true, teamSize: setupSize, teams: [names1, names2] };
-    state.teams[0].name = setupSize === 1 ? teamLabel(names1) : teamInitials(names1);
-    state.teams[1].name = setupSize === 1 ? teamLabel(names2) : teamInitials(names2);
-  }
-
-  setupModal.classList.add('hidden');
-  render();
-  saveState();
 }
 
 // === WINNER OVERLAY ===
@@ -1347,7 +1192,7 @@ function renderHistoryView() {
 // === KEYBOARD SHORTCUTS ===
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
-  if ([setupModal, winnerOverlay, confirmModal, menuModal].some(m => !m.classList.contains('hidden'))) return;
+  if ([winnerOverlay, confirmModal, menuModal].some(m => !m.classList.contains('hidden'))) return;
 
   const isGallo = state.teams.length === 3;
 
@@ -1399,26 +1244,7 @@ if (siguienteManoBtn) siguienteManoBtn.addEventListener('click', siguienteMano);
 if (resetBtn) resetBtn.addEventListener('click', resetAll);
 if (toggleDarkBtn) toggleDarkBtn.addEventListener('click', toggleTheme);
 if (toggleTargetBtn) toggleTargetBtn.addEventListener('click', toggleTarget);
-if (byPointsBtn) byPointsBtn.addEventListener('click', openSetupModal);
 if (historyBtn) historyBtn.addEventListener('click', openHistory);
-
-document.querySelectorAll('.size-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    setupSize = parseInt(btn.dataset.size);
-    refreshSizeBtns();
-    refreshPlayerInputs();
-  });
-});
-
-document.getElementById('confirmSetup').addEventListener('click', confirmSetup);
-document.getElementById('cancelSetup').addEventListener('click', () => {
-  setupModal.classList.add('hidden');
-  initialModal.classList.remove('hidden');
-});
-
-document.addEventListener('input', e => {
-  if (e.target.classList.contains('player-input')) e.target.classList.remove('input-error');
-});
 
 document.getElementById('saveGameBtn').addEventListener('click', () => {
   if (pendingWinnerIndex >= 0) {
@@ -1472,7 +1298,7 @@ document.getElementById('confirmModalCancel').addEventListener('click', () => {
   confirmModal.classList.add('hidden');
 });
 
-[setupModal, winnerOverlay, historyOverlay, confirmModal, menuModal].forEach(modal => {
+[winnerOverlay, historyOverlay, confirmModal, menuModal].forEach(modal => {
   modal.addEventListener('click', e => {
     if (e.target === modal) {
       if (modal === winnerOverlay) pendingWinnerIndex = -1;
@@ -1509,15 +1335,20 @@ function selectInitialPoints(points, btn) {
 }
 
 function startGame() {
-  console.log('startGame called, mode:', initialMode, 'points:', initialPoints);
   state.TARGET = initialPoints;
   if (initialMode === 'gallo') {
     state.teams[0].name = 'Yo';
     state.teams[1].name = 'El';
     state.teams.push({ name: 'Gallo', score: 0 });
+    rankedConfig = { active: true, teamSize: 1, teams: [['Yo'], ['El'], ['Gallo']] };
+  } else {
+    state.teams[0].name = DEFAULT_NAMES[0];
+    state.teams[1].name = DEFAULT_NAMES[1];
+    rankedConfig = { active: true, teamSize: 1, teams: [[DEFAULT_NAMES[0]], [DEFAULT_NAMES[1]]] };
   }
   initialModal.classList.add('hidden');
-  openSetupModal();
+  render();
+  saveState();
 }
 
 // === MENU MODAL ===
