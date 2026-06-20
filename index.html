@@ -581,10 +581,27 @@ body {
 .add-player-row .player-input { flex: 1; }
 .add-player-row .modal-btn-secondary { width: 48px; flex: 0 0 auto; padding: 10px; }
 .modal-btn-primary:disabled { opacity: 0.4; cursor: default; }
+.roster-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.roster-head .team-section-label { margin-bottom: 0; }
+.roster-edit-btn {
+  background: none; border: none; color: var(--text-muted);
+  font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer; padding: 2px 4px;
+}
+.roster-chip.deletable { border-color: #e55; color: #e55; }
+.sync-status {
+  position: fixed; top: 4px; left: 50%; transform: translateX(-50%); z-index: 50;
+  font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+  pointer-events: none; background: var(--bg); border: 1px solid var(--border); opacity: 0.9;
+}
+.sync-status.ok      { color: #2a9d4a; }
+.sync-status.pending { color: #c98a00; }
+.sync-status.offline { color: #999; }
   </style>
 </head>
 <body>
 
+  <div id="syncStatus" class="sync-status ok">✓ Sincronizado</div>
   <div id="board"></div>
   <div id="controls"></div>
 
@@ -636,7 +653,7 @@ body {
     <div class="modal-sheet" style="display:flex; flex-direction:column;">
       <div class="modal-title" style="margin-bottom:12px">Elegí los jugadores</div>
 
-      <div class="team-section">
+      <div class="team-section" id="formatSection">
         <div class="team-section-label">Formato</div>
         <div class="size-selector" id="formatSelector">
           <button class="initial-btn active" data-format="1">1v1</button>
@@ -646,16 +663,23 @@ body {
       </div>
 
       <div class="team-section">
-        <div class="team-section-label">Equipo 1</div>
+        <div class="team-section-label" id="teamLabel1">Equipo 1</div>
         <div id="slots1" class="slot-row"></div>
       </div>
       <div class="team-section">
-        <div class="team-section-label">Equipo 2</div>
+        <div class="team-section-label" id="teamLabel2">Equipo 2</div>
         <div id="slots2" class="slot-row"></div>
+      </div>
+      <div class="team-section" id="teamSection3" style="display:none;">
+        <div class="team-section-label" id="teamLabel3">Jugador 3</div>
+        <div id="slots3" class="slot-row"></div>
       </div>
 
       <div class="team-section">
-        <div class="team-section-label">Jugadores</div>
+        <div class="roster-head">
+          <div class="team-section-label">Jugadores</div>
+          <button type="button" id="editRosterBtn" class="roster-edit-btn">Editar</button>
+        </div>
         <div id="rosterChips" class="roster-chips"></div>
         <div class="add-player-row">
           <input id="newPlayerInput" class="player-input" type="text" placeholder="Agregar jugador" maxlength="15" />
@@ -708,6 +732,7 @@ body {
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
 // === CONSTANTS ===
 const POINTS_PER_CELL    = 5;
@@ -734,6 +759,7 @@ let gameHistory  = [];
 let undoStack    = [];
 let roster       = [];
 let selection    = { format: 1, slots: [[], []] };
+let rosterEditMode = false;
 
 // === DOM REFS ===
 const board            = document.getElementById('board');
@@ -768,21 +794,108 @@ function loadState() {
     console.warn('AudioContext no disponible:', e);
   }
 }
+// --- Supabase (fuente compartida en la nube) ---
+const SB_URL  = 'https://mmnqydvkajtrrzmzypzl.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbnF5ZHZrYWp0cnJ6bXp5cHpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5Mzc5ODIsImV4cCI6MjA5NzUxMzk4Mn0.vtl0Ymiay1ZoMXjGlJgwB2ThbISabhypw_oTz85WkzE';
+const sb = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SB_URL, SB_ANON)
+  : null;
+
 const LS_HISTORY = 'truquero_history_v1';
 const LS_ROSTER  = 'truquero_roster_v1';
-function loadHistory() {
-  try { gameHistory = JSON.parse(localStorage.getItem(LS_HISTORY)) || []; }
-  catch(e) { gameHistory = []; }
+const LS_PENDING = 'truquero_pending_v1';
+
+// --- Caché local (lectura instantánea + offline) ---
+function loadHistory() { try { gameHistory = JSON.parse(localStorage.getItem(LS_HISTORY)) || []; } catch(e) { gameHistory = []; } }
+function saveHistory() { try { localStorage.setItem(LS_HISTORY, JSON.stringify(gameHistory)); } catch(e) {} }
+function loadRoster()  { try { roster = JSON.parse(localStorage.getItem(LS_ROSTER)) || []; } catch(e) { roster = []; } }
+function saveRoster()  { try { localStorage.setItem(LS_ROSTER, JSON.stringify(roster)); } catch(e) {} }
+
+// --- Cola de escrituras pendientes (cuando no hay conexión) ---
+function loadPending()      { try { return JSON.parse(localStorage.getItem(LS_PENDING)) || []; } catch(e) { return []; } }
+function savePending(q)     { try { localStorage.setItem(LS_PENDING, JSON.stringify(q)); } catch(e) {} }
+function queuePending(item) { const q = loadPending(); q.push(item); savePending(q); }
+
+// --- Escritura a Supabase (best-effort; si falla, encola) ---
+async function sbUpsert(table, row) {
+  if (!sb) { queuePending({ table, row }); updateSyncStatus(); return; }
+  try {
+    // ignoreDuplicates -> ON CONFLICT DO NOTHING: idempotente y solo requiere política de INSERT.
+    const { error } = await sb.from(table).upsert(row, { ignoreDuplicates: true });
+    if (error) throw error;
+  } catch(e) {
+    console.warn('Supabase no disponible, encolado:', e?.message || e);
+    queuePending({ table, row });
+  }
+  updateSyncStatus();
 }
-function saveHistory() {
-  try { localStorage.setItem(LS_HISTORY, JSON.stringify(gameHistory)); } catch(e) {}
+async function sbDelete(table, id) {
+  if (!sb) { queuePending({ table, op: 'delete', id }); updateSyncStatus(); return; }
+  try {
+    const { error } = await sb.from(table).delete().eq('id', id);
+    if (error) throw error;
+  } catch(e) {
+    console.warn('Supabase delete falló, encolado:', e?.message || e);
+    queuePending({ table, op: 'delete', id });
+  }
+  updateSyncStatus();
 }
-function loadRoster() {
-  try { roster = JSON.parse(localStorage.getItem(LS_ROSTER)) || []; }
-  catch(e) { roster = []; }
+async function flushPending() {
+  if (!sb) return;
+  const q = loadPending();
+  if (!q.length) return;
+  const rest = [];
+  for (const it of q) {
+    try {
+      const { error } = it.op === 'delete'
+        ? await sb.from(it.table).delete().eq('id', it.id)
+        : await sb.from(it.table).upsert(it.row, { ignoreDuplicates: true });
+      if (error) throw error;
+    } catch(e) { rest.push(it); }
+  }
+  savePending(rest);
+  updateSyncStatus();
 }
-function saveRoster() {
-  try { localStorage.setItem(LS_ROSTER, JSON.stringify(roster)); } catch(e) {}
+
+// Indicador de sincronización en pantalla
+function updateSyncStatus() {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const pending = loadPending().length;
+  if (!sb || !navigator.onLine) {
+    el.textContent = pending ? `⚠ Sin conexión · ${pending} sin guardar` : '⚠ Sin conexión';
+    el.className = 'sync-status offline';
+  } else if (pending) {
+    el.textContent = `↻ ${pending} sin sincronizar`;
+    el.className = 'sync-status pending';
+  } else {
+    el.textContent = '✓ Sincronizado';
+    el.className = 'sync-status ok';
+  }
+}
+
+// --- Sincronización desde Supabase (refresca la caché) ---
+async function syncRoster() {
+  if (!sb) return;
+  try {
+    const { data, error } = await sb.from('players').select('id,name').order('created_at');
+    if (error) throw error;
+    roster = data.map(r => ({ id: r.id, name: r.name }));
+    saveRoster();
+    if (playersModal && !playersModal.classList.contains('hidden')) renderPlayersSelection();
+  } catch(e) { console.warn('syncRoster:', e?.message || e); }
+}
+async function syncHistory() {
+  if (!sb) return;
+  try {
+    const { data, error } = await sb.from('games').select('*').order('date', { ascending: false });
+    if (error) throw error;
+    gameHistory = data.map(g => ({
+      id: g.id, date: g.date, teamSize: g.team_size, mode: g.mode, teams: g.teams, winnerKey: g.winner_key
+    }));
+    saveHistory();
+    if (historyOverlay && !historyOverlay.classList.contains('hidden')) renderHistoryView();
+  } catch(e) { console.warn('syncHistory:', e?.message || e); }
 }
 
 // === THEME ===
@@ -863,6 +976,7 @@ function addRosterPlayer(name) {
   const p = { id: genId(), name };
   roster.push(p);
   saveRoster();
+  sbUpsert('players', { id: p.id, name: p.name });
   return p;
 }
 
@@ -1078,7 +1192,7 @@ function render() {
   const isGallo = state.teams.length === 3;
   if (toggleGalloBtn) toggleGalloBtn.textContent = 'Gallo';
   if (siguienteManoBtn) siguienteManoBtn.style.display = isGallo ? '' : 'none';
-  if (historyBtn) historyBtn.style.display = isGallo ? 'none' : '';
+  if (historyBtn) historyBtn.style.display = '';
 
   if (isGallo) {
     board.className = 'board gallo';
@@ -1138,7 +1252,7 @@ function addPoints(index, delta, { skipUndo = false } = {}) {
   delta > 0 ? soundAdd() : soundRemove();
   updateScore(index);
   saveState();
-  if (team.score === state.TARGET && state.teams.length === 2 && rankedConfig.active) {
+  if (team.score === state.TARGET && state.teams.length >= 2 && rankedConfig.active) {
     showWinnerOverlay(index);
   }
 }
@@ -1170,24 +1284,36 @@ function showWinnerOverlay(winnerIndex) {
   document.getElementById('winnerLabel').textContent =
     rankedConfig.teamSize === 1 ? 'Ganó' : 'Ganaron';
   document.getElementById('winnerName').textContent  = teamLabel(winner);
-  document.getElementById('winnerScore').textContent =
-    `${state.teams[winnerIndex].score}–${state.teams[1 - winnerIndex].score}`;
+  document.getElementById('winnerScore').textContent = state.teams.length === 2
+    ? `${state.teams[winnerIndex].score}–${state.teams[1 - winnerIndex].score}`
+    : `${state.teams[winnerIndex].score}`;
 
   winnerOverlay.classList.remove('hidden');
 }
 
 function saveGame(winnerIndex) {
-  gameHistory.unshift({
+  const game = {
+    id:        genId(),
     date:      new Date().toISOString(),
     teamSize:  rankedConfig.teamSize,
+    mode:      rankedConfig.mode || 'normal',
     teams:     rankedConfig.teams.map((ids, i) => ({
       playerIds: ids,
       names:     namesOf(ids),
       score:     state.teams[i].score
     })),
     winnerKey: comboKey(rankedConfig.teams[winnerIndex])
-  });
+  };
+  gameHistory.unshift(game);
   saveHistory();
+  sbUpsert('games', {
+    id:        game.id,
+    date:      game.date,
+    mode:      game.mode,
+    team_size: game.teamSize,
+    teams:     game.teams,
+    winner_key: game.winnerKey
+  });
 }
 
 // === HISTORY VIEW ===
@@ -1214,7 +1340,7 @@ function renderHistoryView() {
       const ids = team.playerIds || [];
       const isWinner = comboKey(ids) === game.winnerKey;
       ids.forEach((id, idx) => {
-        if (!indiv[id]) indiv[id] = { name: rosterName(id) || team.names?.[idx] || '¿?', wins: 0, games: 0 };
+        if (!indiv[id]) indiv[id] = { name: team.names?.[idx] || rosterName(id) || '¿?', wins: 0, games: 0 };
         indiv[id].games++;
         if (isWinner) indiv[id].wins++;
       });
@@ -1238,9 +1364,13 @@ function renderHistoryView() {
     html += '</div>';
   }
 
+  // Gallo (3 jugadores) va en su propia sección; el resto se agrupa por formato.
+  const isGalloGame = g => g.mode === 'gallo' || (g.teams && g.teams.length === 3);
+  const galloGames  = gameHistory.filter(isGalloGame);
+
   // --- Combinaciones + partidas, agrupadas por formato ---
   const byMode = {};
-  gameHistory.forEach(game => {
+  gameHistory.filter(g => !isGalloGame(g)).forEach(game => {
     const size = game.teamSize || 1;
     if (!byMode[size]) byMode[size] = [];
     byMode[size].push(game);
@@ -1264,7 +1394,7 @@ function renderHistoryView() {
         game.teams.forEach(team => {
           const ids = team.playerIds || [];
           const key = comboKey(ids);
-          if (!stats[key]) stats[key] = { label: teamLabel(namesOf(ids)), wins: 0, games: 0 };
+          if (!stats[key]) stats[key] = { label: teamLabel(team.names || namesOf(ids)), wins: 0, games: 0 };
           stats[key].games++;
           if (key === game.winnerKey) stats[key].wins++;
         });
@@ -1311,9 +1441,9 @@ function renderHistoryView() {
         <div class="game-row">
           <span class="game-date">${dateStr}</span>
           <span class="game-result">
-            <span class="game-winner">${teamLabel(namesOf(winner?.playerIds))}</span>
+            <span class="game-winner">${teamLabel(winner?.names || namesOf(winner?.playerIds))}</span>
             <span class="game-vs"> vs </span>
-            <span class="game-loser">${teamLabel(namesOf(loser?.playerIds))}</span>
+            <span class="game-loser">${teamLabel(loser?.names || namesOf(loser?.playerIds))}</span>
           </span>
           <span class="game-score">${winner?.score ?? 0}–${loser?.score ?? 0}</span>
         </div>`;
@@ -1326,12 +1456,41 @@ function renderHistoryView() {
     html += '</div>';
   });
 
+  // --- Gallo — Partidas (3 jugadores; el Individual de arriba ya suma cada uno) ---
+  if (galloGames.length) {
+    const page  = historyPage['gallo'] || 1;
+    const shown = page * MAX_HISTORY_PAGE;
+    html += '<div class="history-section-title" style="margin-top:16px">Gallo — Partidas</div>';
+    html += '<div class="history-games">';
+    galloGames.slice(0, shown).forEach(game => {
+      const d       = new Date(game.date);
+      const dateStr = `${d.getDate()}/${d.getMonth() + 1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const winner  = game.teams.find(t => comboKey(t.playerIds || []) === game.winnerKey);
+      const others  = game.teams.filter(t => comboKey(t.playerIds || []) !== game.winnerKey);
+      html += `
+        <div class="game-row">
+          <span class="game-date">${dateStr}</span>
+          <span class="game-result">
+            <span class="game-winner">${teamLabel(winner?.names || namesOf(winner?.playerIds))}</span>
+            <span class="game-vs"> ganó a </span>
+            <span class="game-loser">${others.map(o => teamLabel(o.names || namesOf(o.playerIds))).join(', ')}</span>
+          </span>
+          <span class="game-score">${winner?.score ?? 0}</span>
+        </div>`;
+    });
+    if (galloGames.length > shown) {
+      html += `<button class="history-load-more" data-mode="gallo">Ver más (${galloGames.length - shown} restantes)</button>`;
+    }
+    html += '</div>';
+  }
+
   content.innerHTML = html;
 
   content.querySelectorAll('.history-load-more').forEach(btn => {
     btn.addEventListener('click', () => {
-      const mode = parseInt(btn.dataset.mode);
-      historyPage[mode] = (historyPage[mode] || 1) + 1;
+      const raw = btn.dataset.mode;
+      const key = raw === 'gallo' ? 'gallo' : parseInt(raw);
+      historyPage[key] = (historyPage[key] || 1) + 1;
       renderHistoryView();
     });
   });
@@ -1409,10 +1568,18 @@ document.getElementById('formatSelector').addEventListener('click', e => {
 
 document.getElementById('rosterChips').addEventListener('click', e => {
   const chip = e.target.closest('.roster-chip');
-  if (chip) assignPlayer(chip.dataset.id);
+  if (!chip) return;
+  if (rosterEditMode) deletePlayer(chip.dataset.id);
+  else assignPlayer(chip.dataset.id);
 });
 
-['slots1', 'slots2'].forEach(rowId => {
+document.getElementById('editRosterBtn').addEventListener('click', () => {
+  rosterEditMode = !rosterEditMode;
+  document.getElementById('editRosterBtn').textContent = rosterEditMode ? 'Listo' : 'Editar';
+  renderPlayersSelection();
+});
+
+['slots1', 'slots2', 'slots3'].forEach(rowId => {
   document.getElementById(rowId).addEventListener('click', e => {
     const slot = e.target.closest('.slot.filled');
     if (slot) removeFromSlot(parseInt(slot.dataset.team), parseInt(slot.dataset.slot));
@@ -1443,7 +1610,8 @@ document.getElementById('saveGameBtn').addEventListener('click', () => {
     pendingWinnerIndex = -1;
   }
   winnerOverlay.classList.add('hidden');
-  state.teams.forEach((t, i) => { t.score = 0; t.name = DEFAULT_NAMES[i] ?? `Equipo ${i + 1}`; });
+  const resetNames = state.teams.length === 3 ? GALLO_NAMES : DEFAULT_NAMES;
+  state.teams.forEach((t, i) => { t.score = 0; t.name = resetNames[i] ?? `Equipo ${i + 1}`; });
   rankedConfig = { active: false, teamSize: 1, teams: [[], []] };
   render();
   saveState();
@@ -1513,9 +1681,6 @@ function selectInitialMode(mode, btn) {
     b.classList.remove('active');
   });
   btn.classList.add('active');
-  // El modo Gallo (3 jugadores libres) no se trackea en esta fase.
-  const tracked = document.getElementById('trackedPlayBtn');
-  if (tracked) tracked.style.display = mode === 'gallo' ? 'none' : '';
 }
 
 function selectInitialPoints(points, btn) {
@@ -1551,8 +1716,16 @@ function startGame() {
 }
 
 // === PLAYERS SELECTION (partidas con historial) ===
+// Capacidad de jugadores por equipo según el modo de selección.
+function selectionCap() { return selection.mode === 'gallo' ? 1 : selection.format; }
+
 function openPlayersModal() {
-  selection = { format: 1, slots: [[], []] };
+  rosterEditMode = false;
+  const eb = document.getElementById('editRosterBtn');
+  if (eb) eb.textContent = 'Editar';
+  selection = initialMode === 'gallo'
+    ? { mode: 'gallo', format: 1, slots: [[], [], []] }
+    : { mode: 'normal', format: 1, slots: [[], []] };
   document.querySelectorAll('#formatSelector .initial-btn').forEach(b =>
     b.classList.toggle('active', parseInt(b.dataset.format) === selection.format));
   renderPlayersSelection();
@@ -1561,39 +1734,46 @@ function openPlayersModal() {
 }
 
 function renderPlayersSelection() {
-  const fmt = selection.format;
-  [1, 2].forEach(teamNum => {
-    const ids = selection.slots[teamNum - 1];
+  const gallo = selection.mode === 'gallo';
+  const cap   = selectionCap();
+
+  document.getElementById('formatSection').style.display = gallo ? 'none' : '';
+  document.getElementById('teamSection3').style.display  = gallo ? '' : 'none';
+  document.getElementById('teamLabel1').textContent = gallo ? 'Jugador 1' : 'Equipo 1';
+  document.getElementById('teamLabel2').textContent = gallo ? 'Jugador 2' : 'Equipo 2';
+
+  selection.slots.forEach((ids, t) => {
     let h = '';
-    for (let i = 0; i < fmt; i++) {
+    for (let i = 0; i < cap; i++) {
       const id = ids[i];
       h += id != null
-        ? `<div class="slot filled" data-team="${teamNum}" data-slot="${i}">${rosterName(id)}</div>`
-        : `<div class="slot" data-team="${teamNum}" data-slot="${i}">+</div>`;
+        ? `<div class="slot filled" data-team="${t}" data-slot="${i}">${rosterName(id)}</div>`
+        : `<div class="slot" data-team="${t}" data-slot="${i}">+</div>`;
     }
-    document.getElementById('slots' + teamNum).innerHTML = h;
+    document.getElementById('slots' + (t + 1)).innerHTML = h;
   });
 
   const chips = document.getElementById('rosterChips');
   if (!roster.length) {
     chips.innerHTML = '<span class="roster-empty">Agregá jugadores abajo 👇</span>';
   } else {
-    const used = new Set([...selection.slots[0], ...selection.slots[1]]);
-    chips.innerHTML = roster.map(p =>
-      `<div class="roster-chip ${used.has(p.id) ? 'used' : ''}" data-id="${p.id}">${p.name}</div>`
+    const used = new Set(selection.slots.flat());
+    chips.innerHTML = roster.map(p => rosterEditMode
+      ? `<div class="roster-chip deletable" data-id="${p.id}">${p.name} ✕</div>`
+      : `<div class="roster-chip ${used.has(p.id) ? 'used' : ''}" data-id="${p.id}">${p.name}</div>`
     ).join('');
   }
 
-  const full = selection.slots[0].length === fmt && selection.slots[1].length === fmt;
+  const full = selection.slots.every(s => s.length === cap);
   document.getElementById('confirmPlayers').disabled = !full;
 }
 
 function assignPlayer(id) {
-  const used = new Set([...selection.slots[0], ...selection.slots[1]]);
+  const used = new Set(selection.slots.flat());
   if (used.has(id)) return;
-  const fmt = selection.format;
-  for (let t = 0; t < 2; t++) {
-    if (selection.slots[t].length < fmt) {
+  const cap = selectionCap();
+  for (let t = 0; t < selection.slots.length; t++) {
+    if (selection.slots[t].length < cap) {
       selection.slots[t].push(id);
       renderPlayersSelection();
       return;
@@ -1601,29 +1781,47 @@ function assignPlayer(id) {
   }
 }
 
-function removeFromSlot(teamNum, slotIdx) {
-  const ids = selection.slots[teamNum - 1];
-  if (ids[slotIdx] != null) {
+function removeFromSlot(teamIdx, slotIdx) {
+  const ids = selection.slots[teamIdx];
+  if (ids && ids[slotIdx] != null) {
     ids.splice(slotIdx, 1);
     renderPlayersSelection();
   }
 }
 
+function deletePlayer(id) {
+  roster = roster.filter(p => p.id !== id);
+  saveRoster();
+  if (selection && selection.slots) {
+    selection.slots = selection.slots.map(s => s.filter(x => x !== id));
+  }
+  sbDelete('players', id);
+  renderPlayersSelection();
+}
+
 function startTrackedGame() {
-  const fmt = selection.format;
-  const ids1 = selection.slots[0].slice(0, fmt);
-  const ids2 = selection.slots[1].slice(0, fmt);
-  if (ids1.length < fmt || ids2.length < fmt) return;
+  const cap = selectionCap();
+  if (!selection.slots.every(s => s.length === cap)) return;
 
   state.TARGET = initialPoints;
-  state.teams = [
-    { name: fmt === 1 ? rosterName(ids1[0]) : teamInitials(namesOf(ids1)), score: 0 },
-    { name: fmt === 1 ? rosterName(ids2[0]) : teamInitials(namesOf(ids2)), score: 0 }
-  ];
-  state.mano = 0;
-  savedGallo = null;
-  rankedConfig = { active: true, teamSize: fmt, teams: [ids1, ids2] };
-  undoStack = [];
+  state.mano   = 0;
+  savedGallo   = null;
+  undoStack    = [];
+
+  if (selection.mode === 'gallo') {
+    const teams = selection.slots.map(s => s.slice(0, 1));   // [[id],[id],[id]]
+    state.teams = teams.map(s => ({ name: rosterName(s[0]), score: 0 }));
+    rankedConfig = { active: true, teamSize: 1, mode: 'gallo', teams };
+  } else {
+    const fmt  = selection.format;
+    const ids1 = selection.slots[0].slice(0, fmt);
+    const ids2 = selection.slots[1].slice(0, fmt);
+    state.teams = [
+      { name: fmt === 1 ? rosterName(ids1[0]) : teamInitials(namesOf(ids1)), score: 0 },
+      { name: fmt === 1 ? rosterName(ids2[0]) : teamInitials(namesOf(ids2)), score: 0 }
+    ];
+    rankedConfig = { active: true, teamSize: fmt, mode: 'normal', teams: [ids1, ids2] };
+  }
 
   playersModal.classList.add('hidden');
   render();
@@ -1648,8 +1846,14 @@ menuModal.querySelectorAll('.menu-item').forEach(item => {
 // === INIT ===
 loadTheme();
 loadState();
-loadHistory();
+loadHistory();   // caché local: muestra al instante
 loadRoster();
+syncRoster();    // refresca desde Supabase (fuente compartida)
+syncHistory();
+flushPending();  // reintenta escrituras que quedaron sin conexión
+updateSyncStatus();
+window.addEventListener('online',  async () => { await flushPending(); syncRoster(); syncHistory(); updateSyncStatus(); });
+window.addEventListener('offline', updateSyncStatus);
 // Initial modal is shown by default
   </script>
 </body>
