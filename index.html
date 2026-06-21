@@ -666,6 +666,21 @@ body {
 .sync-status.hidden  { display: none; }
 .sync-status.pending { color: #c98a00; border-color: #c98a00; }
 .sync-status.offline { color: #e08a00; border-color: #e08a00; }
+/* === Grupos === */
+.u-hide { display: none !important; }
+.group-chip { display:flex; width:fit-content; max-width:100%; margin:0 auto 18px; align-items:center; gap:9px; border:1px solid var(--border); border-radius:999px; padding:6px 9px 6px 14px; font-size:13px; font-weight:700; cursor:pointer; }
+.group-chip .nm { color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.group-chip .sw { color:var(--text-muted); border-left:1px solid var(--line); padding-left:9px; font-size:10px; text-transform:uppercase; letter-spacing:1px; flex:0 0 auto; }
+.group-list { display:flex; flex-direction:column; gap:8px; }
+.group-card { display:flex; align-items:center; gap:12px; border:1px solid var(--border); border-radius:var(--radius); padding:13px 14px; cursor:pointer; background:var(--bg); color:var(--text); text-align:left; width:100%; font-family:var(--font); }
+.group-card.active { background:var(--btn-bg); color:var(--btn-text); }
+.group-card .g-name { font-weight:700; font-size:15px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.group-card .g-meta { font-size:11px; color:var(--text-muted); font-weight:600; flex:0 0 auto; }
+.group-card.active .g-meta { color:var(--btn-text); opacity:.7; }
+.group-card .g-mono { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex:0 0 auto; }
+.group-card.active .g-mono { border-color:var(--btn-text); }
+.group-card.group-new { border-style:dashed; color:var(--text-muted); justify-content:center; font-weight:700; text-transform:uppercase; letter-spacing:1px; font-size:12px; }
+.pool .sec .hint { color:var(--text-muted); font-weight:600; letter-spacing:0; text-transform:none; }
 /* En la pantalla de configuración no se muestran el tablero ni los controles de juego */
 body.config .bottom-actions, body.config #syncStatus,
 body.config #board, body.config #controls { display: none; }
@@ -701,10 +716,50 @@ body.config #board, body.config #controls { display: none; }
     </div>
   </div>
 
-  <!-- Initial config modal -->
-  <div id="initialModal" class="modal-overlay">
+  <!-- Start modal: elegir tipo de juego -->
+  <div id="startModal" class="modal-overlay">
     <div class="modal-sheet">
-      <div class="modal-title" style="margin-bottom:20px">Truquero</div>
+      <div class="modal-title" style="margin:24px 0 28px">Truquero</div>
+      <div class="modal-actions" style="flex-direction: column; gap: 10px; margin-top:0;">
+        <button class="modal-btn-primary" id="startQuickBtn" style="flex:0 0 auto;">Juego rápido</button>
+        <button class="modal-btn-secondary" id="startTrackedBtn" style="flex:0 0 auto;">Jugar por los puntos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group selector modal -->
+  <div id="groupModal" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-title" style="margin-bottom:16px">Elegí grupo</div>
+      <div id="groupList" class="group-list"></div>
+
+      <div id="newGroupForm" class="team-section u-hide" style="margin-top:14px;">
+        <div class="team-section-label">Nombre del grupo</div>
+        <div class="search-row" style="margin-bottom:0;">
+          <input id="newGroupName" class="search-input" type="text" placeholder="Ej: Barra del sábado" maxlength="24" />
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn-secondary" id="newGroupCancel">Cancelar</button>
+          <button class="modal-btn-primary" id="newGroupCreate">Crear</button>
+        </div>
+      </div>
+
+      <div class="modal-actions" id="groupMainActions">
+        <button class="modal-btn-secondary" id="groupBackBtn">Atrás</button>
+        <button class="modal-btn-primary" id="groupContinueBtn">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Initial config modal (modalidad + puntos) -->
+  <div id="initialModal" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-title" style="margin-bottom:16px">Truquero</div>
+
+      <div id="initialGroupChip" class="group-chip u-hide">
+        <span class="nm" id="initialGroupName"></span>
+        <span class="sw">Cambiar</span>
+      </div>
 
       <div class="team-section">
         <div class="team-section-label">Modalidad</div>
@@ -723,8 +778,8 @@ body.config #board, body.config #controls { display: none; }
       </div>
 
       <div class="modal-actions" style="flex-direction: column; gap: 8px;">
-        <button class="modal-btn-primary" id="quickPlayBtn" onclick="startGame()" style="flex:0 0 auto;">Juego rápido</button>
-        <button class="modal-btn-secondary" id="trackedPlayBtn" style="flex:0 0 auto;">Jugar por los puntos</button>
+        <button class="modal-btn-primary" id="initialPrimaryBtn" style="flex:0 0 auto;">Empezar</button>
+        <button class="modal-btn-secondary" id="initialBackBtn" style="flex:0 0 auto;">Atrás</button>
       </div>
     </div>
   </div>
@@ -782,6 +837,10 @@ body.config #board, body.config #controls { display: none; }
         <div class="modal-title">Historial</div>
         <button class="modal-close" id="closeHistory" aria-label="Cerrar historial">✕</button>
       </div>
+      <div id="historyGroupChip" class="group-chip" style="margin-bottom:12px">
+        <span class="nm" id="historyGroupName"></span>
+        <span class="sw">Cambiar</span>
+      </div>
       <div id="historyContent" class="history-content"></div>
     </div>
   </div>
@@ -828,6 +887,14 @@ let rosterEditMode = false;
 let quickMode    = false;   // true en "Jugar rápido" (sin trackear)
 let searchQuery  = '';
 
+// === GRUPOS ===
+let groups         = [];          // [{ id, name }]
+let groupMembers   = {};          // { groupId: [playerId, ...] }
+let activeGroupId  = null;        // grupo activo (flujo "por los puntos")
+let playFlow       = 'quick';     // 'quick' | 'tracked'
+let pendingGroupId = null;        // selección tentativa dentro del groupModal
+let groupReturn    = 'initial';   // a dónde volver tras elegir grupo: 'initial' | 'history'
+
 // === DOM REFS ===
 const board            = document.getElementById('board');
 const controls         = document.getElementById('controls');
@@ -843,6 +910,8 @@ const historyOverlay   = document.getElementById('historyOverlay');
 const confirmModal     = document.getElementById('confirmModal');
 const menuModal        = document.getElementById('menuModal');
 const playersModal     = document.getElementById('playersModal');
+const startModal       = document.getElementById('startModal');
+const groupModal       = document.getElementById('groupModal');
 
 // === ELEMENT CACHE ===
 let teamElements       = [];
@@ -871,12 +940,64 @@ const sb = (window.supabase && window.supabase.createClient)
 const LS_HISTORY = 'truquero_history_v1';
 const LS_ROSTER  = 'truquero_roster_v1';
 const LS_PENDING = 'truquero_pending_v1';
+const LS_GROUPS  = 'truquero_groups_v1';
+const LS_MEMBERS = 'truquero_members_v1';
+const LS_ACTIVE  = 'truquero_active_group_v1';
+const DEFAULT_GROUP_ID = 'grp_general';
 
 // --- Caché local (lectura instantánea + offline) ---
 function loadHistory() { try { gameHistory = JSON.parse(localStorage.getItem(LS_HISTORY)) || []; } catch(e) { gameHistory = []; } }
 function saveHistory() { try { localStorage.setItem(LS_HISTORY, JSON.stringify(gameHistory)); } catch(e) {} }
 function loadRoster()  { try { roster = JSON.parse(localStorage.getItem(LS_ROSTER)) || []; } catch(e) { roster = []; } }
 function saveRoster()  { try { localStorage.setItem(LS_ROSTER, JSON.stringify(roster)); } catch(e) {} }
+function loadGroups()  { try { groups = JSON.parse(localStorage.getItem(LS_GROUPS)) || []; } catch(e) { groups = []; } }
+function saveGroups()  { try { localStorage.setItem(LS_GROUPS, JSON.stringify(groups)); } catch(e) {} }
+function loadMembers() { try { groupMembers = JSON.parse(localStorage.getItem(LS_MEMBERS)) || {}; } catch(e) { groupMembers = {}; } }
+function saveMembers() { try { localStorage.setItem(LS_MEMBERS, JSON.stringify(groupMembers)); } catch(e) {} }
+function loadActiveGroup() { try { activeGroupId = localStorage.getItem(LS_ACTIVE) || null; } catch(e) { activeGroupId = null; } }
+function saveActiveGroup() { try { localStorage.setItem(LS_ACTIVE, activeGroupId || ''); } catch(e) {} }
+
+// Garantiza un grupo "General" por defecto y un grupo activo válido.
+function ensureDefaultGroup() {
+  if (!groups.some(g => g.id === DEFAULT_GROUP_ID)) {
+    groups.unshift({ id: DEFAULT_GROUP_ID, name: 'General' });
+    saveGroups();
+    sbUpsert('groups', { id: DEFAULT_GROUP_ID, name: 'General' });
+  }
+  if (!activeGroupId || !groups.some(g => g.id === activeGroupId)) {
+    activeGroupId = DEFAULT_GROUP_ID;
+    saveActiveGroup();
+  }
+}
+function groupName(id) { const g = groups.find(x => x.id === id); return g ? g.name : 'General'; }
+function groupInitials(name) {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+function groupMemberIds(id) { return groupMembers[id] || []; }
+function gamesInGroup(id) { return gameHistory.filter(g => (g.groupId || DEFAULT_GROUP_ID) === id); }
+function addMember(groupId, playerId) {
+  if (!groupId || !playerId) return;
+  const list = groupMembers[groupId] || (groupMembers[groupId] = []);
+  if (!list.includes(playerId)) {
+    list.push(playerId);
+    saveMembers();
+    sbUpsert('group_members', { group_id: groupId, player_id: playerId });
+  }
+}
+function createGroup(name) {
+  name = (name || '').trim();
+  if (!name) return null;
+  const existing = groups.find(g => g.name.toLowerCase() === name.toLowerCase());
+  if (existing) return existing;
+  const g = { id: genId(), name };
+  groups.push(g);
+  saveGroups();
+  sbUpsert('groups', { id: g.id, name: g.name });
+  return g;
+}
 
 // --- Cola de escrituras pendientes (cuando no hay conexión) ---
 function loadPending()      { try { return JSON.parse(localStorage.getItem(LS_PENDING)) || []; } catch(e) { return []; } }
@@ -959,11 +1080,34 @@ async function syncHistory() {
     const { data, error } = await sb.from('games').select('*').order('date', { ascending: false });
     if (error) throw error;
     gameHistory = data.map(g => ({
-      id: g.id, date: g.date, teamSize: g.team_size, mode: g.mode, teams: g.teams, winnerKey: g.winner_key
+      id: g.id, date: g.date, teamSize: g.team_size, mode: g.mode, teams: g.teams, winnerKey: g.winner_key, groupId: g.group_id
     }));
     saveHistory();
     if (historyOverlay && !historyOverlay.classList.contains('hidden')) renderHistoryView();
   } catch(e) { console.warn('syncHistory:', e?.message || e); }
+}
+async function syncGroups() {
+  if (!sb) return;
+  try {
+    const { data, error } = await sb.from('groups').select('id,name').order('created_at');
+    if (error) throw error;
+    if (data && data.length) { groups = data.map(r => ({ id: r.id, name: r.name })); saveGroups(); }
+    ensureDefaultGroup();
+    if (groupModal && !groupModal.classList.contains('hidden')) renderGroupList();
+  } catch(e) { console.warn('syncGroups:', e?.message || e); }
+}
+async function syncMembers() {
+  if (!sb) return;
+  try {
+    const { data, error } = await sb.from('group_members').select('group_id,player_id');
+    if (error) throw error;
+    if (data) {
+      const m = {};
+      data.forEach(r => { (m[r.group_id] || (m[r.group_id] = [])).push(r.player_id); });
+      groupMembers = m;
+      saveMembers();
+    }
+  } catch(e) { console.warn('syncMembers:', e?.message || e); }
 }
 
 // === THEME ===
@@ -1436,7 +1580,8 @@ function saveGame(winnerIndex) {
       names:     namesOf(ids),
       score:     state.teams[i].score
     })),
-    winnerKey: comboKey(rankedConfig.teams[winnerIndex])
+    winnerKey: comboKey(rankedConfig.teams[winnerIndex]),
+    groupId:   activeGroupId || DEFAULT_GROUP_ID
   };
   gameHistory.unshift(game);
   saveHistory();
@@ -1446,7 +1591,8 @@ function saveGame(winnerIndex) {
     mode:      game.mode,
     team_size: game.teamSize,
     teams:     game.teams,
-    winner_key: game.winnerKey
+    winner_key: game.winnerKey,
+    group_id:  game.groupId
   });
 }
 
@@ -1460,16 +1606,22 @@ function openHistory() {
 function renderHistoryView() {
   const content = document.getElementById('historyContent');
 
-  if (gameHistory.length === 0) {
-    content.innerHTML = '<p class="history-empty">Todavía no hay partidas registradas.</p>';
+  const chipName = document.getElementById('historyGroupName');
+  if (chipName) chipName.textContent = groupName(activeGroupId);
+
+  // Solo las partidas del grupo activo.
+  const groupGames = gamesInGroup(activeGroupId);
+
+  if (groupGames.length === 0) {
+    content.innerHTML = '<p class="history-empty">Todavía no hay partidas en este grupo.</p>';
     return;
   }
 
   let html = '';
 
-  // --- Estadísticas individuales (todas las partidas, sin importar con quién) ---
+  // --- Estadísticas individuales (todas las partidas del grupo, sin importar con quién) ---
   const indiv = {};
-  gameHistory.forEach(game => {
+  groupGames.forEach(game => {
     game.teams.forEach(team => {
       const ids = team.playerIds || [];
       const isWinner = comboKey(ids) === game.winnerKey;
@@ -1500,11 +1652,11 @@ function renderHistoryView() {
 
   // Gallo (3 jugadores) va en su propia sección; el resto se agrupa por formato.
   const isGalloGame = g => g.mode === 'gallo' || (g.teams && g.teams.length === 3);
-  const galloGames  = gameHistory.filter(isGalloGame);
+  const galloGames  = groupGames.filter(isGalloGame);
 
   // --- Combinaciones + partidas, agrupadas por formato ---
   const byMode = {};
-  gameHistory.filter(g => !isGalloGame(g)).forEach(game => {
+  groupGames.filter(g => !isGalloGame(g)).forEach(game => {
     const size = game.teamSize || 1;
     if (!byMode[size]) byMode[size] = [];
     byMode[size].push(game);
@@ -1633,7 +1785,7 @@ function renderHistoryView() {
 // === KEYBOARD SHORTCUTS ===
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
-  if ([winnerOverlay, confirmModal, menuModal, playersModal, initialModal].some(m => !m.classList.contains('hidden'))) return;
+  if ([winnerOverlay, confirmModal, menuModal, playersModal, initialModal, startModal, groupModal].some(m => !m.classList.contains('hidden'))) return;
 
   const isGallo = state.teams.length === 3;
 
@@ -1687,8 +1839,122 @@ if (toggleDarkBtn) toggleDarkBtn.addEventListener('click', toggleTheme);
 if (toggleTargetBtn) toggleTargetBtn.addEventListener('click', toggleTarget);
 if (historyBtn) historyBtn.addEventListener('click', openHistory);
 
-// --- Players selection wiring ---
-document.getElementById('trackedPlayBtn').addEventListener('click', openPlayersModal);
+// --- Flujo de pantallas iniciales (start -> [grupo] -> modalidad) ---
+function showStart() {
+  playFlow = 'quick';
+  document.body.classList.add('config');
+  [initialModal, groupModal, playersModal, historyOverlay, winnerOverlay, confirmModal, menuModal]
+    .forEach(m => m && m.classList.add('hidden'));
+  // Reset visual de modalidad/puntos a los valores por defecto.
+  initialMode = 'dupla';
+  initialPoints = 30;
+  const sels = initialModal.querySelectorAll('.size-selector');
+  if (sels[0]) sels[0].querySelectorAll('.initial-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+  if (sels[1]) sels[1].querySelectorAll('.initial-btn').forEach((b, i) => b.classList.toggle('active', i === 1));
+  startModal.classList.remove('hidden');
+}
+
+function openInitialConfig() {
+  const chip   = document.getElementById('initialGroupChip');
+  const nameEl = document.getElementById('initialGroupName');
+  if (playFlow === 'tracked') {
+    if (nameEl) nameEl.textContent = groupName(activeGroupId);
+    chip.classList.remove('u-hide');
+  } else {
+    chip.classList.add('u-hide');
+  }
+  document.getElementById('initialPrimaryBtn').textContent =
+    playFlow === 'tracked' ? 'Elegir jugadores' : 'Empezar';
+  startModal.classList.add('hidden');
+  groupModal.classList.add('hidden');
+  initialModal.classList.remove('hidden');
+}
+
+function renderGroupList() {
+  const list = document.getElementById('groupList');
+  if (!list) return;
+  let html = groups.map(g => {
+    const members = groupMemberIds(g.id).length;
+    const gms     = gamesInGroup(g.id).length;
+    const active  = g.id === pendingGroupId ? ' active' : '';
+    return `<button class="group-card${active}" data-group="${g.id}">`
+      + `<span class="g-mono">${groupInitials(g.name)}</span>`
+      + `<span class="g-name">${g.name}</span>`
+      + `<span class="g-meta">${members} jug · ${gms}</span></button>`;
+  }).join('');
+  // Desde el historial solo se consulta: no se pueden crear grupos.
+  if (groupReturn !== 'history') {
+    html += '<button class="group-card group-new" data-new="1">＋ Nuevo grupo</button>';
+  }
+  list.innerHTML = html;
+}
+
+function openGroupModal(returnTo) {
+  groupReturn = returnTo || 'initial';
+  pendingGroupId = activeGroupId;
+  document.getElementById('newGroupForm').classList.add('u-hide');
+  document.getElementById('groupMainActions').classList.remove('u-hide');
+  renderGroupList();
+  initialModal.classList.add('hidden');
+  historyOverlay.classList.add('hidden');
+  startModal.classList.add('hidden');
+  groupModal.classList.remove('hidden');
+}
+
+function closeGroupModalTo(target) {
+  groupModal.classList.add('hidden');
+  if (target === 'history') { renderHistoryView(); historyOverlay.classList.remove('hidden'); }
+  else openInitialConfig();
+}
+
+// --- Wiring: pantalla inicial ---
+document.getElementById('startQuickBtn').addEventListener('click', () => { playFlow = 'quick'; openInitialConfig(); });
+document.getElementById('startTrackedBtn').addEventListener('click', () => { playFlow = 'tracked'; openInitialConfig(); });
+
+// --- Wiring: modalidad ---
+document.getElementById('initialPrimaryBtn').addEventListener('click', () => {
+  if (playFlow === 'tracked') openPlayersModal();
+  else startGame();
+});
+document.getElementById('initialBackBtn').addEventListener('click', showStart);
+document.getElementById('initialGroupChip').addEventListener('click', () => openGroupModal('initial'));
+
+// --- Wiring: grupos ---
+document.getElementById('historyGroupChip').addEventListener('click', () => openGroupModal('history'));
+document.getElementById('groupList').addEventListener('click', e => {
+  const card = e.target.closest('[data-group],[data-new]');
+  if (!card) return;
+  if (card.dataset.new) {
+    document.getElementById('newGroupForm').classList.remove('u-hide');
+    document.getElementById('groupMainActions').classList.add('u-hide');
+    const inp = document.getElementById('newGroupName'); if (inp) { inp.value = ''; inp.focus(); }
+    return;
+  }
+  pendingGroupId = card.dataset.group;
+  renderGroupList();
+});
+document.getElementById('newGroupCancel').addEventListener('click', () => {
+  document.getElementById('newGroupForm').classList.add('u-hide');
+  document.getElementById('groupMainActions').classList.remove('u-hide');
+});
+document.getElementById('newGroupCreate').addEventListener('click', () => {
+  const inp = document.getElementById('newGroupName');
+  const g = createGroup(inp ? inp.value : '');
+  if (!g) { if (inp) inp.focus(); return; }
+  pendingGroupId = g.id;
+  document.getElementById('newGroupForm').classList.add('u-hide');
+  document.getElementById('groupMainActions').classList.remove('u-hide');
+  renderGroupList();
+});
+document.getElementById('newGroupName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('newGroupCreate').click(); }
+});
+document.getElementById('groupContinueBtn').addEventListener('click', () => {
+  activeGroupId = pendingGroupId || activeGroupId;
+  saveActiveGroup();
+  closeGroupModalTo(groupReturn);
+});
+document.getElementById('groupBackBtn').addEventListener('click', () => closeGroupModalTo(groupReturn));
 
 document.getElementById('formatSelector').addEventListener('click', e => {
   const btn = e.target.closest('.initial-btn');
@@ -1772,12 +2038,8 @@ document.getElementById('confirmModalReset').addEventListener('click', () => {
   state.mano = 0;
   undoStack = [];
   rankedConfig = { active: false, teamSize: 1, teams: [[], []] };
-  initialMode = 'dupla';
-  initialPoints = 30;
-  const tb = document.getElementById('trackedPlayBtn');
-  if (tb) tb.style.display = '';
-  document.body.classList.add('config');
-  initialModal.classList.remove('hidden');
+  quickMode = false;
+  showStart();
   saveState();
 });
 document.getElementById('confirmModalCancel').addEventListener('click', () => {
@@ -1905,9 +2167,21 @@ function renderPlayersSelection() {
     if (!exact && !rosterEditMode)
       ph += `<div class="prow create" data-create="1"><span class="mono dashed">＋</span><span class="nm">Crear “${searchQuery.trim()}”</span></div>`;
   } else {
-    const all = [...roster].sort((a, b) => a.name.localeCompare(b.name));
-    ph += '<div class="sec">Jugadores</div>';
-    ph += all.map(rowFor).join('');
+    const memberIds = groupMemberIds(activeGroupId);
+    const inGroup   = p => memberIds.includes(p.id);
+    const members   = roster.filter(inGroup).sort((a, b) => a.name.localeCompare(b.name));
+    const others    = roster.filter(p => !inGroup(p)).sort((a, b) => a.name.localeCompare(b.name));
+    if (members.length) {
+      ph += '<div class="sec">Del grupo</div>';
+      ph += members.map(rowFor).join('');
+    }
+    if (others.length) {
+      ph += '<div class="sec">Otros jugadores <span class="hint">· tocá para sumar al grupo</span></div>';
+      ph += others.map(rowFor).join('');
+    }
+    if (!members.length && !others.length) {
+      ph += '<div class="pool-empty">Todavía no hay jugadores. Escribí un nombre arriba y creá el primero.</div>';
+    }
   }
   document.getElementById('pool').innerHTML = ph;
 
@@ -1920,6 +2194,7 @@ function assignPlayer(id) {
   for (let t = 0; t < selection.slots.length; t++) {
     if (selection.slots[t].length < cap) { selection.slots[t].push(id); break; }
   }
+  addMember(activeGroupId, id);   // queda como miembro del grupo activo
   renderPlayersSelection();
 }
 
@@ -1997,11 +2272,17 @@ loadTheme();
 loadState();
 loadHistory();   // caché local: muestra al instante
 loadRoster();
+loadGroups();
+loadMembers();
+loadActiveGroup();
+ensureDefaultGroup();
 syncRoster();    // refresca desde Supabase (fuente compartida)
 syncHistory();
+syncGroups();
+syncMembers();
 flushPending();  // reintenta escrituras que quedaron sin conexión
 updateSyncStatus();
-window.addEventListener('online',  async () => { await flushPending(); syncRoster(); syncHistory(); updateSyncStatus(); });
+window.addEventListener('online',  async () => { await flushPending(); syncRoster(); syncHistory(); syncGroups(); syncMembers(); updateSyncStatus(); });
 window.addEventListener('offline', updateSyncStatus);
 document.body.classList.add('config'); // al inicio se muestra el modal de configuración
 

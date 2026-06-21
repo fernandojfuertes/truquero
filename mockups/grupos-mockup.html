@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Truquero · Mockup Grupos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1a1a; --bg-card: #1a1a1a; --border: #ffffff; --text: #ffffff;
+  --text-muted: #999999; --btn-bg: #ffffff; --btn-text: #000000;
+  --font: 'Archivo', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --radius: 4px; --line: rgba(255,255,255,.16);
+}
+body.light {
+  --bg:#FFF; --bg-card:#FFF; --border:#000; --text:#000; --text-muted:#666;
+  --btn-bg:#000; --btn-text:#FFF; --line: rgba(0,0,0,.14);
+}
+* { box-sizing: border-box; }
+body { font-family: var(--font); color:#fff; background:#0d0d0d; margin:0; padding:28px 16px 60px; }
+body.light { background:#e9e9e9; color:#111; }
+.page-head { max-width:1280px; margin:0 auto 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.page-head h1 { font-size:18px; letter-spacing:2px; text-transform:uppercase; margin:0; }
+.page-head p { margin:4px 0 0; font-size:12px; color:#888; }
+.theme-toggle { background:none; border:1px solid #666; color:#aaa; border-radius:999px; padding:6px 14px; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; cursor:pointer; font-family:var(--font); }
+
+.flow { max-width:1280px; margin:0 auto 40px; }
+.flow-title { font-size:13px; letter-spacing:2px; text-transform:uppercase; font-weight:800; margin:0 0 4px; }
+.flow-sub { font-size:12px; color:#888; margin:0 0 16px; }
+.flow.points .flow-title { color:#fff; } body.light .flow.points .flow-title { color:#111; }
+.flow.quick .flow-title  { color:#fff; } body.light .flow.quick .flow-title  { color:#111; }
+
+.rail { display:flex; gap:16px; align-items:flex-start; overflow-x:auto; padding-bottom:8px; }
+.frame { flex:0 0 300px; }
+.frame.wide { flex:0 0 300px; }
+.frame-cap { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#888; font-weight:800; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.frame-cap .step { background:#333; color:#ccc; border-radius:50%; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; font-size:9px; }
+body.light .frame-cap .step { background:#ccc; color:#333; }
+.frame-note { font-size:11px; color:#777; margin:8px 2px 0; line-height:1.45; }
+.frame-note b { color:#aaa; } body.light .frame-note b { color:#444; }
+.arrow { flex:0 0 auto; align-self:center; color:#555; font-size:22px; padding-top:40px; }
+
+.phone { background:var(--bg); border:1px solid var(--border); border-radius:18px; padding:16px; min-height:430px; display:flex; flex-direction:column; }
+
+/* reused components */
+.modal-title { font-size:16px; font-weight:700; color:var(--text); text-transform:uppercase; letter-spacing:1px; text-align:center; }
+.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.modal-close { background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; }
+.modal-actions { display:flex; gap:8px; margin-top:18px; }
+.modal-btn-primary,.modal-btn-secondary { flex:1; padding:12px; border-radius:var(--radius); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; cursor:pointer; border:1px solid var(--border); font-family:var(--font); }
+.modal-btn-primary { background:var(--btn-bg); color:var(--btn-text); }
+.modal-btn-secondary { background:var(--bg); color:var(--text); }
+.btn-hi { outline:3px solid #5b8cff; outline-offset:2px; }
+.size-selector { display:flex; gap:8px; margin-bottom:18px; }
+.initial-btn { flex:1; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg); color:var(--text); font-size:14px; font-weight:700; cursor:pointer; font-family:var(--font); }
+.initial-btn.active { background:var(--btn-bg); color:var(--btn-text); }
+.team-section { margin-bottom:16px; }
+.team-section-label { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:8px; font-weight:600; }
+
+/* group chip — solo nombre + cambiar */
+.group-chip { display:inline-flex; align-items:center; gap:9px; align-self:center; border:1px solid var(--border); border-radius:999px; padding:6px 9px 6px 14px; font-size:13px; font-weight:700; margin-bottom:18px; cursor:pointer; }
+.group-chip .nm { color:var(--text); }
+.group-chip .sw { color:var(--text-muted); border-left:1px solid var(--line); padding-left:9px; font-size:10px; text-transform:uppercase; letter-spacing:1px; }
+
+/* group selector */
+.group-list { display:flex; flex-direction:column; gap:8px; }
+.group-card { display:flex; align-items:center; gap:12px; border:1px solid var(--border); border-radius:var(--radius); padding:13px 14px; cursor:pointer; background:var(--bg); }
+.group-card.active { background:var(--btn-bg); color:var(--btn-text); }
+.group-card .g-name { font-weight:700; font-size:15px; flex:1; }
+.group-card .g-meta { font-size:11px; color:var(--text-muted); font-weight:600; }
+.group-card.active .g-meta { color:var(--btn-text); opacity:.7; }
+.group-card .g-mono { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex:0 0 auto; }
+.group-card.active .g-mono { border-color:var(--btn-text); }
+.group-new { border-style:dashed; color:var(--text-muted); justify-content:center; font-weight:700; text-transform:uppercase; letter-spacing:1px; font-size:12px; }
+
+/* player picker */
+.teams { border:1px solid var(--line); border-radius:var(--radius); padding:10px; margin-bottom:12px; display:flex; flex-direction:column; gap:9px; }
+.team-line { display:flex; align-items:center; gap:8px; }
+.team-line .tlabel { flex:0 0 56px; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); font-weight:700; }
+.tchips { display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+.tchip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:999px; padding:3px 9px; font-size:12px; font-weight:700; }
+.tchip .x { color:var(--text-muted); }
+.tslot { border:1px dashed var(--border); border-radius:999px; padding:4px 12px; font-size:12px; color:var(--text-muted); }
+.search-row { display:flex; align-items:center; gap:8px; border:1px solid var(--border); border-radius:var(--radius); padding:9px 11px; margin-bottom:10px; }
+.search-ic { color:var(--text-muted); }
+.search-input { flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--text); font-size:14px; font-family:var(--font); }
+.pool { max-height:210px; overflow-y:auto; }
+.pool .sec { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); font-weight:800; padding:9px 2px 4px; display:flex; align-items:center; gap:6px; }
+.pool .sec .hint { color:#666; font-weight:600; letter-spacing:0; text-transform:none; }
+.prow { display:flex; align-items:center; gap:10px; padding:7px 2px; border-bottom:1px solid var(--line); cursor:pointer; }
+.prow .mono { width:24px; height:24px; border-radius:50%; border:1px solid var(--border); display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex:0 0 auto; }
+.prow .mono.dashed { border-style:dashed; color:var(--text-muted); }
+.prow .nm { flex:1; font-weight:700; font-size:14px; }
+.prow .tag { font-size:10px; color:var(--text-muted); border:1px solid var(--line); border-radius:999px; padding:2px 7px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+
+/* history */
+.history-section-title { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); font-weight:800; margin:12px 0 8px; }
+.history-stats { display:flex; flex-direction:column; gap:8px; }
+.stat-row { display:flex; align-items:center; justify-content:space-between; border:1px solid var(--line); border-radius:var(--radius); padding:9px 12px; }
+.stat-row .s-name { font-weight:700; font-size:14px; }
+.stat-row .s-val { font-size:12px; color:var(--text-muted); font-weight:700; }
+.history-games { display:flex; flex-direction:column; gap:6px; }
+.game-row { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; border:1px solid var(--line); border-radius:var(--radius); padding:8px 12px; }
+.game-date { grid-row:1/3; align-self:center; font-size:11px; color:var(--text-muted); font-weight:700; }
+.game-winner { font-size:13px; font-weight:700; text-align:right; }
+.game-loser { font-size:13px; color:var(--text-muted); text-align:right; }
+
+/* mini board (placeholder tablero) */
+.board-mini { flex:1; display:flex; flex-direction:column; gap:10px; }
+.board-mini .bt { flex:1; border:1px solid var(--border); border-radius:var(--radius); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; }
+.board-mini .bt .bn { font-size:14px; font-weight:700; }
+.board-mini .bt .bs { font-size:34px; font-weight:900; }
+.board-mini .bnote { text-align:center; font-size:11px; color:var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="page-head">
+  <div>
+    <h1>Truquero · Mockup de Grupos</h1>
+    <p>Dos flujos desde la pantalla inicial. Nada conectado — solo para validar la idea visual. (El recuadro azul marca el botón que se tocó.)</p>
+  </div>
+  <button class="theme-toggle" onclick="document.body.classList.toggle('light')">Tema claro / oscuro</button>
+</div>
+
+<!-- ============ START (compartida) ============ -->
+<div class="flow">
+  <p class="flow-title">Pantalla inicial (compartida)</p>
+  <p class="flow-sub">Lo primero que ve el usuario. Bifurca en dos caminos.</p>
+  <div class="rail">
+    <div class="frame">
+      <div class="frame-cap"><span class="step">0</span> Inicio</div>
+      <div class="phone">
+        <div class="modal-title" style="margin:40px 0 28px">Truquero</div>
+        <div style="flex:1"></div>
+        <div class="modal-actions" style="flex-direction:column;gap:10px;margin:0">
+          <button class="modal-btn-primary">Juego rápido</button>
+          <button class="modal-btn-secondary">Jugar por los puntos</button>
+        </div>
+      </div>
+      <div class="frame-note">Solo el título y los dos botones. Limpio. Cada uno arranca un flujo distinto ↓</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FLOW A: por los puntos ============ -->
+<div class="flow points">
+  <p class="flow-title">Flujo A — Jugar por los puntos</p>
+  <p class="flow-sub">Trackea: pide grupo, jugadores, y guarda en el historial del grupo.</p>
+  <div class="rail">
+
+    <div class="frame">
+      <div class="frame-cap"><span class="step">1</span> Inicio</div>
+      <div class="phone">
+        <div class="modal-title" style="margin:40px 0 28px">Truquero</div>
+        <div style="flex:1"></div>
+        <div class="modal-actions" style="flex-direction:column;gap:10px;margin:0">
+          <button class="modal-btn-primary">Juego rápido</button>
+          <button class="modal-btn-secondary btn-hi">Jugar por los puntos</button>
+        </div>
+      </div>
+      <div class="frame-note">Toca <b>Jugar por los puntos</b>.</div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <div class="frame">
+      <div class="frame-cap"><span class="step">2</span> Elegir grupo</div>
+      <div class="phone">
+        <div class="modal-title" style="margin-bottom:18px">Truquero</div>
+        <div class="team-section-label">¿Con qué grupo jugás?</div>
+        <div class="group-list">
+          <div class="group-card active"><div class="g-mono">BS</div><div class="g-name">Barra del sábado</div><div class="g-meta">6 jug · 42</div></div>
+          <div class="group-card"><div class="g-mono">LA</div><div class="g-name">Los del laburo</div><div class="g-meta">4 jug · 17</div></div>
+          <div class="group-card"><div class="g-mono">FA</div><div class="g-name">Familia</div><div class="g-meta">5 jug · 9</div></div>
+          <div class="group-card group-new">＋ Nuevo grupo</div>
+        </div>
+        <div class="modal-actions"><button class="modal-btn-primary">Continuar</button></div>
+      </div>
+      <div class="frame-note">Elegís grupo (queda como <b>grupo activo</b>). Si ya venías jugando con uno, este paso se saltea y vas directo al 3 (lo cambiás con "Cambiar").</div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <div class="frame">
+      <div class="frame-cap"><span class="step">3</span> Modalidad</div>
+      <div class="phone">
+        <div class="modal-title" style="margin-bottom:14px">Truquero</div>
+        <div class="group-chip"><span class="nm">Barra del sábado</span><span class="sw">Cambiar</span></div>
+        <div class="team-section">
+          <div class="team-section-label">Modalidad</div>
+          <div class="size-selector"><button class="initial-btn active">Normal</button><button class="initial-btn">Gallo</button></div>
+        </div>
+        <div class="team-section">
+          <div class="team-section-label">Puntos</div>
+          <div class="size-selector"><button class="initial-btn">15</button><button class="initial-btn active">30</button></div>
+        </div>
+        <div class="modal-actions"><button class="modal-btn-primary">Elegir jugadores</button></div>
+      </div>
+      <div class="frame-note">Modalidad/puntos <b>con el chip de grupo</b> arriba (solo el nombre + "Cambiar").</div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <div class="frame">
+      <div class="frame-cap"><span class="step">4</span> Jugadores del grupo</div>
+      <div class="phone">
+        <div class="modal-title" style="margin-bottom:12px">Equipos y jugadores</div>
+        <div class="teams">
+          <div class="team-line"><span class="tlabel">Nosotros</span><div class="tchips"><span class="tchip">Fer <span class="x">✕</span></span><span class="tchip">Naza <span class="x">✕</span></span></div></div>
+          <div class="team-line"><span class="tlabel">Ellos</span><div class="tchips"><span class="tchip">Juli <span class="x">✕</span></span><span class="tslot">＋ libre</span></div></div>
+        </div>
+        <div class="search-row"><span class="search-ic">🔍</span><input class="search-input" placeholder="Buscar o agregar jugador…" /></div>
+        <div class="pool">
+          <div class="sec">Del grupo</div>
+          <div class="prow"><span class="mono">M</span><span class="nm">Marce</span></div>
+          <div class="prow"><span class="mono">RO</span><span class="nm">Rodri</span></div>
+          <div class="sec">Otros jugadores <span class="hint">· tocá para sumar al grupo</span></div>
+          <div class="prow"><span class="mono dashed">+</span><span class="nm">Caro</span><span class="tag">＋ al grupo</span></div>
+        </div>
+        <div class="modal-actions"><button class="modal-btn-secondary">Atrás</button><button class="modal-btn-primary">Jugar</button></div>
+      </div>
+      <div class="frame-note">Arriba miembros del grupo; abajo el roster global que se suma con un toque (identidad compartida).</div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <div class="frame">
+      <div class="frame-cap"><span class="step">5</span> Historial del grupo</div>
+      <div class="phone">
+        <div class="modal-header"><div class="modal-title">Historial</div><button class="modal-close">✕</button></div>
+        <div class="group-chip" style="margin-bottom:12px"><span class="nm">Barra del sábado</span><span class="sw">Cambiar</span></div>
+        <div class="history-section-title">Individual</div>
+        <div class="history-stats">
+          <div class="stat-row"><span class="s-name">Fer</span><span class="s-val">18G · 71%</span></div>
+          <div class="stat-row"><span class="s-name">Naza</span><span class="s-val">15G · 60%</span></div>
+        </div>
+        <div class="history-section-title">Normal — Partidas</div>
+        <div class="history-games">
+          <div class="game-row"><span class="game-date">21/06</span><span class="game-winner">Fer · Naza</span><span class="game-loser">Juli · Marce</span></div>
+          <div class="game-row"><span class="game-date">14/06</span><span class="game-winner">Rodri · Pablo</span><span class="game-loser">Fer · Naza</span></div>
+        </div>
+      </div>
+      <div class="frame-note">Stats y partidas <b>solo de ese grupo</b>. "Cambiar" deja ver el historial de otro grupo.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ FLOW B: juego rápido ============ -->
+<div class="flow quick">
+  <p class="flow-title">Flujo B — Juego rápido</p>
+  <p class="flow-sub">Sin grupo, sin jugadores, sin guardar. Como hoy: nombres fijos y al tablero.</p>
+  <div class="rail">
+
+    <div class="frame">
+      <div class="frame-cap"><span class="step">1</span> Inicio</div>
+      <div class="phone">
+        <div class="modal-title" style="margin:40px 0 28px">Truquero</div>
+        <div style="flex:1"></div>
+        <div class="modal-actions" style="flex-direction:column;gap:10px;margin:0">
+          <button class="modal-btn-primary btn-hi">Juego rápido</button>
+          <button class="modal-btn-secondary">Jugar por los puntos</button>
+        </div>
+      </div>
+      <div class="frame-note">Toca <b>Juego rápido</b>.</div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <div class="frame">
+      <div class="frame-cap"><span class="step">2</span> Modalidad (sin grupo)</div>
+      <div class="phone">
+        <div class="modal-title" style="margin-bottom:18px">Truquero</div>
+        <div class="team-section">
+          <div class="team-section-label">Modalidad</div>
+          <div class="size-selector"><button class="initial-btn active">Normal</button><button class="initial-btn">Gallo</button></div>
+        </div>
+        <div class="team-section">
+          <div class="team-section-label">Puntos</div>
+          <div class="size-selector"><button class="initial-btn">15</button><button class="initial-btn active">30</button></div>
+        </div>
+        <div class="modal-actions"><button class="modal-btn-primary">Empezar</button></div>
+      </div>
+      <div class="frame-note"><b>Sin chip de grupo</b> y sin paso de jugadores. Va directo al tablero.</div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <div class="frame">
+      <div class="frame-cap"><span class="step">3</span> Tablero</div>
+      <div class="phone">
+        <div class="board-mini">
+          <div class="bt"><div class="bn">Nosotros</div><div class="bs">12</div></div>
+          <div class="bt"><div class="bn">Ellos</div><div class="bs">9</div></div>
+        </div>
+        <div class="bnote">Nombres fijos · sin botón Historial · no guarda</div>
+      </div>
+      <div class="frame-note">Igual que el quickMode actual: no trackea nada.</div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
