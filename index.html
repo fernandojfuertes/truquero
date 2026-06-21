@@ -6,6 +6,9 @@
   <title>Truquero</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗡️</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%231a1a1a'/><g stroke='%23ffffff' stroke-width='3' fill='none'><rect x='30' y='30' width='40' height='40'/><rect x='76' y='30' width='40' height='40'/><rect x='122' y='30' width='40' height='40'/><rect x='30' y='76' width='40' height='40'/><rect x='76' y='76' width='40' height='40'/><rect x='122' y='76' width='40' height='40'/><line x1='30' y1='30' x2='70' y2='70'/><line x1='76' y1='30' x2='116' y2='70'/><line x1='122' y1='30' x2='162' y2='70'/><line x1='30' y1='76' x2='70' y2='116'/><line x1='76' y1='76' x2='116' y2='116'/><line x1='122' y1='76' x2='162' y2='116'/></g></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
 :root {
   --bg: #1a1a1a;
@@ -19,9 +22,10 @@
   --btn-text: #000000;
   --cell: 7.5vh;
   --seg-w: 0.7vh;
-  --font: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font: 'Archivo', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --radius: 4px;
   --radius-sm: 2px;
+  --line: rgba(255,255,255,.16);
 }
 body.light {
   --bg: #FFFFFF;
@@ -33,6 +37,7 @@ body.light {
   --seg-on: #000000;
   --btn-bg: #000000;
   --btn-text: #FFFFFF;
+  --line: rgba(0,0,0,.14);
 }
 *, *::before, *::after { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
 html, body {
@@ -117,12 +122,22 @@ body {
   letter-spacing: 1px;
   font-weight: 600;
   white-space: nowrap;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
+.btn-top svg { width: 14px; height: 14px; flex: 0 0 auto; }
 .btn-top:active {
   background: var(--border);
   color: var(--btn-text);
 }
+/* Reiniciar (semi-destructivo): atenuado para que no compita ni se toque sin querer */
+.btn-top.muted { color: var(--text-muted); border-color: var(--line); }
+/* Tema: ícono solo, chico, al costado */
+.bottom-actions .btn-top.icon-only { flex: 0 0 auto; width: clamp(42px, 12vw, 54px); padding-left: 0; padding-right: 0; }
+.btn-top.icon-only svg { width: 16px; height: 16px; }
 .board {
   flex: 1;
   display: grid;
@@ -201,11 +216,16 @@ body {
   border-bottom: 1px solid transparent;
   color: var(--text);
   text-align: left;
-  width: 65%;
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
   padding: 2px 0;
   transition: border-color 0.2s;
   font-family: var(--font);
 }
+/* Marcador del equipo que va ganando (agnóstico al nombre) */
+.leader-mark { display: none; flex: 0 0 auto; color: var(--text); font-size: 0.6em; margin-right: 4px; }
+.leader-mark.on { display: inline; }
 .name:read-only { pointer-events: none; }
 .name:focus {
   outline: none;
@@ -239,7 +259,10 @@ body {
   text-align: center;
   letter-spacing: 0.5px;
   font-weight: 600;
+  transition: color 0.2s;
 }
+/* Sección activa (la que se está llenando) resaltada */
+.section-label.active { color: var(--text); font-weight: 800; }
 .row {
   display: flex;
   flex-direction: column;
@@ -326,8 +349,14 @@ body {
   transition: transform 0.15s, opacity 0.15s;
 }
 .btn-action:active { transform: scale(0.95); opacity: 0.8; }
-.btn-plus, .btn-minus { background: var(--btn-bg); color: var(--btn-text); }
+.btn-plus { background: var(--btn-bg); color: var(--btn-text); }
+/* El panel entero suma +1; el − es secundario (outline) */
+.btn-minus { background: transparent; color: var(--text); }
+.tappable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tappable:active { background: rgba(127, 127, 127, 0.10); }
 @media (max-width: 600px) {
+  /* Un poco más de aire respecto a los bordes del teléfono (parejo en los 4 lados) */
+  .board { padding: 14px; }
   .board.gallo {
     --cell: 6.5vh;
     --seg-w: 0.5vh;
@@ -351,23 +380,34 @@ body {
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 100;
-  padding: 0;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
 .modal-overlay.hidden { display: none; }
+/* Entrada de modales: fade + scale-in suave */
+@keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheetIn  { from { opacity: 0; transform: scale(.94) translateY(10px); } to { opacity: 1; transform: none; } }
+.modal-overlay:not(.hidden) { animation: modalFade .2s ease; }
+.modal-sheet { animation: sheetIn .24s cubic-bezier(.2, .9, .2, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay:not(.hidden), .modal-sheet { animation: none; }
+}
 .modal-sheet {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius) var(--radius) 0 0;
+  border-radius: 14px;
   padding: 24px 20px;
   width: 100%;
-  max-width: 500px;
-  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  max-width: 440px;
+  max-height: 100%;
+  overflow-y: auto;
 }
 .modal-sheet--tall {
-  max-height: 80dvh;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -385,6 +425,7 @@ body {
   color: var(--text);
   text-transform: uppercase;
   letter-spacing: 1px;
+  text-align: center;
 }
 .modal-close {
   background: none;
@@ -590,27 +631,65 @@ body {
   cursor: pointer; padding: 2px 4px;
 }
 .roster-chip.deletable { border-color: #e55; color: #e55; }
+/* === Buscador / picker de jugadores === */
+.mono { width:24px; height:24px; border-radius:50%; border:1px solid var(--border); display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex:0 0 auto; }
+.mono.dashed { border-style:dashed; }
+.teams { border:1px solid var(--line); border-radius:var(--radius); padding:10px; margin-bottom:14px; display:flex; flex-direction:column; gap:9px; }
+.team-line { display:flex; align-items:center; gap:8px; }
+.team-line .tlabel { flex:0 0 64px; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); font-weight:700; }
+.tchips { display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+.tchip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:999px; padding:3px 9px 3px 3px; font-size:12px; font-weight:700; cursor:pointer; }
+.tchip .x { color:var(--text-muted); }
+.tslot { border:1px dashed var(--border); border-radius:999px; padding:4px 12px; font-size:12px; color:var(--text-muted); }
+.cap { flex:0 0 auto; font-size:11px; color:var(--text-muted); font-weight:700; }
+.search-row { display:flex; align-items:center; gap:8px; border:1px solid var(--border); border-radius:var(--radius); padding:9px 11px; margin-bottom:12px; }
+.search-ic { color:var(--text-muted); }
+.search-input { flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--text); font-size:14px; font-family:var(--font); }
+.search-row .roster-edit-btn { flex:0 0 auto; }
+.pool { max-height:240px; overflow-y:auto; margin:0 -2px; }
+.pool .sec { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); font-weight:800; padding:8px 2px 4px; position:sticky; top:0; background:var(--bg); }
+.pool-empty { color:var(--text-muted); font-size:13px; padding:14px 2px; }
+.prow { display:flex; align-items:center; gap:10px; padding:7px 2px; border-bottom:1px solid var(--line); cursor:pointer; }
+.prow .nm { flex:1; font-weight:700; font-size:14px; }
+.prow.in .nm { color:var(--text-muted); }
+.prow.create .nm { color:var(--text); }
+.padd { width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--text); font-size:15px; line-height:1; cursor:pointer; flex:0 0 auto; }
+.prow.in .padd { background:var(--btn-bg); color:var(--btn-text); }
+.padd:disabled { opacity:.3; }
+.padd.danger { border-color:#e55; color:#e55; }
 .sync-status {
-  position: fixed; top: 4px; left: 50%; transform: translateX(-50%); z-index: 50;
-  font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
-  pointer-events: none; background: var(--bg); border: 1px solid var(--border); opacity: 0.9;
+  position: fixed; bottom: calc(7vh + 10px); left: 50%; transform: translateX(-50%); z-index: 50;
+  font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 999px;
+  pointer-events: none; background: var(--bg); border: 1px solid var(--border);
 }
-.sync-status.ok      { color: #2a9d4a; }
-.sync-status.pending { color: #c98a00; }
-.sync-status.offline { color: #999; }
+.sync-status.hidden  { display: none; }
+.sync-status.pending { color: #c98a00; border-color: #c98a00; }
+.sync-status.offline { color: #e08a00; border-color: #e08a00; }
+/* En la pantalla de configuración no se muestran el tablero ni los controles de juego */
+body.config .bottom-actions, body.config #syncStatus,
+body.config #board, body.config #controls { display: none; }
   </style>
 </head>
 <body>
 
-  <div id="syncStatus" class="sync-status ok">✓ Sincronizado</div>
+  <div id="syncStatus" class="sync-status hidden"></div>
   <div id="board"></div>
   <div id="controls"></div>
 
   <div class="bottom-actions">
-    <button class="btn-top" id="historyBtn" aria-label="Ver historial">Historial</button>
-    <button class="btn-top" id="siguienteMano" style="display:none" aria-label="Siguiente mano">Sig. Mano</button>
-    <button class="btn-top" id="resetBtn" aria-label="Reiniciar partida">Reiniciar</button>
-    <button class="btn-top" id="toggleDarkMode" aria-label="Cambiar tema claro/oscuro">◑</button>
+    <button class="btn-top" id="historyBtn" aria-label="Ver historial">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="5"/><line x1="18" y1="20" x2="18" y2="15"/></svg>
+      <span>Historial</span>
+    </button>
+    <button class="btn-top" id="siguienteMano" style="display:none" aria-label="Siguiente mano">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><polyline points="20.5 4 20.5 9 15.5 9"/></svg>
+      <span>Sig. Mano</span>
+    </button>
+    <button class="btn-top muted" id="resetBtn" aria-label="Reiniciar partida">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><polyline points="3.5 4 3.5 9 8.5 9"/></svg>
+      <span>Reiniciar</span>
+    </button>
+    <button class="btn-top icon-only" id="toggleDarkMode" aria-label="Cambiar tema claro/oscuro"></button>
   </div>
 
   <!-- Menu modal -->
@@ -652,7 +731,7 @@ body {
   <!-- Players selection modal -->
   <div id="playersModal" class="modal-overlay hidden">
     <div class="modal-sheet" style="display:flex; flex-direction:column;">
-      <div class="modal-title" style="margin-bottom:12px">Elegí los jugadores</div>
+      <div class="modal-title" style="margin-bottom:12px">Equipos y jugadores</div>
 
       <div class="team-section" id="formatSection">
         <div class="team-section-label">Formato</div>
@@ -663,30 +742,15 @@ body {
         </div>
       </div>
 
-      <div class="team-section">
-        <div class="team-section-label" id="teamLabel1">Equipo 1</div>
-        <div id="slots1" class="slot-row"></div>
-      </div>
-      <div class="team-section">
-        <div class="team-section-label" id="teamLabel2">Equipo 2</div>
-        <div id="slots2" class="slot-row"></div>
-      </div>
-      <div class="team-section" id="teamSection3" style="display:none;">
-        <div class="team-section-label" id="teamLabel3">Jugador 3</div>
-        <div id="slots3" class="slot-row"></div>
+      <div id="teamsPinned" class="teams"></div>
+
+      <div class="search-row">
+        <span class="search-ic">🔍</span>
+        <input id="playerSearch" class="search-input" type="text" placeholder="Buscar o agregar jugador…" maxlength="15" />
+        <button type="button" id="editRosterBtn" class="roster-edit-btn">Editar</button>
       </div>
 
-      <div class="team-section">
-        <div class="roster-head">
-          <div class="team-section-label">Jugadores</div>
-          <button type="button" id="editRosterBtn" class="roster-edit-btn">Editar</button>
-        </div>
-        <div id="rosterChips" class="roster-chips"></div>
-        <div class="add-player-row">
-          <input id="newPlayerInput" class="player-input" type="text" placeholder="Agregar jugador" maxlength="15" />
-          <button class="modal-btn-secondary" id="addPlayerBtn">＋</button>
-        </div>
-      </div>
+      <div id="pool" class="pool"></div>
 
       <div class="modal-actions">
         <button class="modal-btn-secondary" id="cancelPlayers">Atrás</button>
@@ -723,12 +787,11 @@ body {
 
   <!-- Confirm reset modal -->
   <div id="confirmModal" class="modal-overlay hidden">
-    <div class="modal-sheet" style="display: flex; flex-direction: column;">
+    <div class="modal-sheet">
       <div class="modal-title" style="margin-bottom:12px">¿Reiniciar?</div>
-      <div class="modal-actions" style="flex-direction: column; gap: 8px; flex: 1; justify-content: flex-end;">
-        <button class="modal-btn-primary" id="confirmModalResetPoints" style="flex: 0 0 auto;">Reiniciar Puntos</button>
-        <button class="modal-btn-primary" id="confirmModalResetConfig" style="flex: 0 0 auto;">Reiniciar Anotador</button>
-        <button class="modal-btn-secondary" id="confirmModalCancel" style="flex: 0 0 auto; margin-top: 8px;">Cancelar</button>
+      <div class="modal-actions">
+        <button class="modal-btn-secondary" id="confirmModalCancel">Cancelar</button>
+        <button class="modal-btn-primary" id="confirmModalReset">Reiniciar</button>
       </div>
     </div>
   </div>
@@ -762,6 +825,7 @@ let roster       = [];
 let selection    = { format: 1, slots: [[], []] };
 let rosterEditMode = false;
 let quickMode    = false;   // true en "Jugar rápido" (sin trackear)
+let searchQuery  = '';
 
 // === DOM REFS ===
 const board            = document.getElementById('board');
@@ -868,11 +932,12 @@ function updateSyncStatus() {
     el.textContent = pending ? `⚠ Sin conexión · ${pending} sin guardar` : '⚠ Sin conexión';
     el.className = 'sync-status offline';
   } else if (pending) {
-    el.textContent = `↻ ${pending} sin sincronizar`;
+    el.textContent = `↻ ${pending} sin guardar`;
     el.className = 'sync-status pending';
   } else {
-    el.textContent = '✓ Sincronizado';
-    el.className = 'sync-status ok';
+    // Todo sincronizado: no molestamos, ocultamos el indicador.
+    el.className = 'sync-status hidden';
+    el.textContent = '';
   }
 }
 
@@ -912,8 +977,10 @@ function toggleTheme() {
   updateThemeBtn();
 }
 
+const ICON_SUN  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="21.5" y2="12"/><line x1="5.2" y1="5.2" x2="6.6" y2="6.6"/><line x1="17.4" y1="17.4" x2="18.8" y2="18.8"/><line x1="18.8" y1="5.2" x2="17.4" y2="6.6"/><line x1="6.6" y1="17.4" x2="5.2" y2="18.8"/></svg>';
+const ICON_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>';
 function updateThemeBtn() {
-  toggleDarkBtn.textContent = document.body.classList.contains('light') ? '◐' : '◑';
+  if (toggleDarkBtn) toggleDarkBtn.innerHTML = document.body.classList.contains('light') ? ICON_SUN : ICON_MOON;
 }
 
 // === TARGET TOGGLE ===
@@ -955,8 +1022,30 @@ function playTone(freq, duration, type = 'sine', gainVal = 0.3) {
   }
 }
 
-function soundAdd()    { playTone(660, 0.12); }
-function soundRemove() { playTone(220, 0.1, 'sine', 0.2); }
+function soundAdd()    { playTone(660, 0.12, 'sine', 0.45); }
+function soundRemove() { playTone(220, 0.1, 'sine', 0.3); }
+// "Clink" de moneda estilo Mario (B5 -> E6, onda cuadrada) al cruzar a Buenas.
+function soundCoin() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.setValueAtTime(987.77, t);          // B5
+    osc.frequency.setValueAtTime(1318.51, t + 0.07);  // E6
+    gain.gain.setValueAtTime(0.45, t);
+    gain.gain.setValueAtTime(0.45, t + 0.07);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    osc.start(t);
+    osc.stop(t + 0.5);
+  } catch(e) {
+    console.warn('Error reproduciendo sonido:', e);
+  }
+}
 
 // === HELPERS ===
 function teamKey(players) {
@@ -1016,27 +1105,51 @@ function updateSegments(segmentEls, totalScore) {
   }
 }
 
+// El número grande cuenta por sección: 1→15 (Malas) y de nuevo 1→15 (Buenas).
+function sectionCount(score) { return score <= 0 ? 0 : ((score - 1) % 15) + 1; }
+
 function updateScore(index) {
   const refs = teamElements[index]?._refs;
   if (!refs) return;
   const score = state.teams[index].score;
-  refs.totalDisplay.textContent = score;
+  refs.totalDisplay.textContent = sectionCount(score);
   refs.totalDisplay.setAttribute('aria-label', `Puntos: ${score}`);
   refs.totalDisplay.classList.remove('bump');
   void refs.totalDisplay.offsetWidth;
   refs.totalDisplay.classList.add('bump');
   updateSegments(refs.segments, score);
+  updateActiveSection(refs, score);
+  updateLeader();
+}
+
+// Resalta la sección que se está llenando: Malas (hasta 15) y luego Buenas.
+function updateActiveSection(refs, score) {
+  if (!refs.labels) return;
+  const inBuenas = score >= 16;
+  refs.labels[0]?.classList.toggle('active', !inBuenas);  // Malas
+  refs.labels[1]?.classList.toggle('active', inBuenas);   // Buenas
+}
+
+// Marca con un ▲ al equipo que va ganando (agnóstico al nombre, monocromo).
+function updateLeader() {
+  if (!state.teams.length) return;
+  const max = Math.max(...state.teams.map(t => t.score));
+  const leaders = state.teams.filter(t => t.score === max).length;
+  state.teams.forEach((t, i) => {
+    const mark = teamElements[i]?._refs?.leaderMark;
+    if (mark) mark.classList.toggle('on', max > 0 && leaders === 1 && t.score === max);
+  });
 }
 
 // === DOM BUILDING ===
 function buildSections(container) {
   const segments = [];
-  const defs = state.TARGET === 15
-    ? [{ label: null, cls: 'section section-single' }]
-    : [
-        { label: 'Malas',  cls: 'section section-malas'  },
-        { label: 'Buenas', cls: 'section section-buenas' }
-      ];
+  const labels = [];
+  // Siempre dos secciones de 15 (Malas + Buenas); el 15/30 solo cambia el objetivo de victoria.
+  const defs = [
+    { label: 'Malas',  cls: 'section section-malas'  },
+    { label: 'Buenas', cls: 'section section-buenas' }
+  ];
 
   defs.forEach(({ label, cls }) => {
     const section = document.createElement('div');
@@ -1047,6 +1160,7 @@ function buildSections(container) {
       lbl.className = 'section-label';
       lbl.textContent = label;
       section.appendChild(lbl);
+      labels.push(lbl);
     }
 
     const row = document.createElement('div');
@@ -1065,7 +1179,7 @@ function buildSections(container) {
     section.appendChild(row);
     container.appendChild(section);
   });
-  return segments;
+  return { segments, labels };
 }
 
 function buildScorePanel(team, index, { className, showControls }) {
@@ -1086,38 +1200,44 @@ function buildScorePanel(team, index, { className, showControls }) {
     saveState();
   });
 
+  const leaderMark = document.createElement('span');
+  leaderMark.className = 'leader-mark';
+  leaderMark.textContent = '▲';
+  leaderMark.setAttribute('aria-hidden', 'true');
+
   const totalDisplay = document.createElement('div');
   totalDisplay.className = 'total-display';
-  totalDisplay.textContent = team.score;
+  totalDisplay.textContent = sectionCount(team.score);
   totalDisplay.setAttribute('aria-live', 'polite');
   totalDisplay.setAttribute('aria-label', `Puntos: ${team.score}`);
 
-  headerRow.append(nameInput, totalDisplay);
+  headerRow.append(nameInput, leaderMark, totalDisplay);
   el.appendChild(headerRow);
 
-  const segments = buildSections(el);
+  const { segments, labels } = buildSections(el);
 
   if (showControls) {
+    // Tocar en cualquier parte del panel suma +1; el "−" chico corrige.
+    el.classList.add('tappable');
+    el.addEventListener('click', e => {
+      if (e.target.closest('.name') || e.target.closest('.btn-minus')) return;
+      addPoints(index, 1);
+    });
+
     const teamControls = document.createElement('div');
     teamControls.className = 'team-controls';
 
-    const plusBtn = document.createElement('button');
-    plusBtn.className = 'btn-action btn-plus';
-    plusBtn.textContent = '+';
-    plusBtn.setAttribute('aria-label', `Sumar punto a ${team.name}`);
-    plusBtn.addEventListener('click', () => addPoints(index, 1));
-
     const minusBtn = document.createElement('button');
     minusBtn.className = 'btn-action btn-minus';
-    minusBtn.textContent = '-';
-    minusBtn.setAttribute('aria-label', `Restar punto a ${team.name}`);
-    minusBtn.addEventListener('click', () => addPoints(index, -1));
+    minusBtn.textContent = '−';
+    minusBtn.setAttribute('aria-label', `Restar un punto a ${team.name}`);
+    minusBtn.addEventListener('click', e => { e.stopPropagation(); addPoints(index, -1); });
 
-    teamControls.append(plusBtn, minusBtn);
+    teamControls.appendChild(minusBtn);
     el.appendChild(teamControls);
   }
 
-  el._refs = { nameInput, totalDisplay, segments };
+  el._refs = { nameInput, totalDisplay, segments, leaderMark, labels };
   return el;
 }
 
@@ -1150,22 +1270,23 @@ function buildDuplaCard(pairIdx) {
 
   card.appendChild(playersRow);
 
+  // Tocar la tarjeta de la dupla suma +1 a ambos; el "−" corrige.
+  card.classList.add('tappable');
+  card.addEventListener('click', e => {
+    if (e.target.closest('.name') || e.target.closest('.btn-minus')) return;
+    addPointsDupla(1);
+  });
+
   const sharedControls = document.createElement('div');
   sharedControls.className = 'team-controls';
 
-  const plusBtn = document.createElement('button');
-  plusBtn.className = 'btn-action btn-plus';
-  plusBtn.textContent = '+';
-  plusBtn.setAttribute('aria-label', 'Sumar punto a la dupla');
-  plusBtn.addEventListener('click', () => addPointsDupla(1));
-
   const minusBtn = document.createElement('button');
   minusBtn.className = 'btn-action btn-minus';
-  minusBtn.textContent = '-';
-  minusBtn.setAttribute('aria-label', 'Restar punto a la dupla');
-  minusBtn.addEventListener('click', () => addPointsDupla(-1));
+  minusBtn.textContent = '−';
+  minusBtn.setAttribute('aria-label', 'Restar un punto a la dupla');
+  minusBtn.addEventListener('click', e => { e.stopPropagation(); addPointsDupla(-1); });
 
-  sharedControls.append(plusBtn, minusBtn);
+  sharedControls.appendChild(minusBtn);
   card.appendChild(sharedControls);
   return card;
 }
@@ -1211,6 +1332,8 @@ function render() {
       updateSegments(teamEl._refs.segments, team.score);
     });
   }
+  updateLeader();
+  teamElements.forEach((el, i) => { if (el && el._refs) updateActiveSection(el._refs, state.teams[i].score); });
 }
 
 function renderGalloBoard() {
@@ -1253,7 +1376,11 @@ function addPoints(index, delta, { skipUndo = false } = {}) {
   if (next === prev) return;
   if (!skipUndo) pushUndo();
   team.score = next;
-  delta > 0 ? soundAdd() : soundRemove();
+  if (delta > 0) {
+    (prev < 16 && next >= 16) ? soundCoin() : soundAdd();  // moneda al entrar a Buenas
+  } else {
+    soundRemove();
+  }
   updateScore(index);
   saveState();
   if (team.score === state.TARGET && state.teams.length >= 2 && rankedConfig.active) {
@@ -1570,11 +1697,18 @@ document.getElementById('formatSelector').addEventListener('click', e => {
   renderPlayersSelection();
 });
 
-document.getElementById('rosterChips').addEventListener('click', e => {
-  const chip = e.target.closest('.roster-chip');
-  if (!chip) return;
-  if (rosterEditMode) deletePlayer(chip.dataset.id);
-  else assignPlayer(chip.dataset.id);
+document.getElementById('pool').addEventListener('click', e => {
+  const row = e.target.closest('[data-add],[data-remove],[data-del],[data-create]');
+  if (!row) return;
+  if (row.dataset.create)      createFromSearch();
+  else if (row.dataset.del)    deletePlayer(row.dataset.del);
+  else if (row.dataset.add)    assignPlayer(row.dataset.add);
+  else if (row.dataset.remove) removeAssignment(row.dataset.remove);
+});
+
+document.getElementById('teamsPinned').addEventListener('click', e => {
+  const chip = e.target.closest('[data-remove]');
+  if (chip) removeAssignment(chip.dataset.remove);
 });
 
 document.getElementById('editRosterBtn').addEventListener('click', () => {
@@ -1583,23 +1717,18 @@ document.getElementById('editRosterBtn').addEventListener('click', () => {
   renderPlayersSelection();
 });
 
-['slots1', 'slots2', 'slots3'].forEach(rowId => {
-  document.getElementById(rowId).addEventListener('click', e => {
-    const slot = e.target.closest('.slot.filled');
-    if (slot) removeFromSlot(parseInt(slot.dataset.team), parseInt(slot.dataset.slot));
-  });
+document.getElementById('playerSearch').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  renderPlayersSelection();
 });
-
-function addPlayerFromInput() {
-  const input = document.getElementById('newPlayerInput');
-  const p = addRosterPlayer(input.value);
-  input.value = '';
-  if (p) renderPlayersSelection();
-  input.focus();
-}
-document.getElementById('addPlayerBtn').addEventListener('click', addPlayerFromInput);
-document.getElementById('newPlayerInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') { e.preventDefault(); addPlayerFromInput(); }
+document.getElementById('playerSearch').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return;
+  const exact = roster.find(p => p.name.toLowerCase() === q);
+  if (exact) { assignPlayer(exact.id); searchQuery = ''; e.target.value = ''; renderPlayersSelection(); }
+  else createFromSearch();
 });
 
 document.getElementById('confirmPlayers').addEventListener('click', startTrackedGame);
@@ -1630,19 +1759,7 @@ document.getElementById('closeHistory').addEventListener('click', () => {
   historyOverlay.classList.add('hidden');
 });
 
-document.getElementById('confirmModalResetPoints').addEventListener('click', () => {
-  confirmModal.classList.add('hidden');
-  const isGallo = state.teams.length === 3;
-  const names = isGallo ? GALLO_NAMES : DEFAULT_NAMES;
-  state.teams.forEach((t, i) => {
-    t.score = 0;
-    t.name = names[i];
-  });
-  undoStack = [];
-  render();
-  saveState();
-});
-document.getElementById('confirmModalResetConfig').addEventListener('click', () => {
+document.getElementById('confirmModalReset').addEventListener('click', () => {
   confirmModal.classList.add('hidden');
   state.teams = [
     { name: DEFAULT_NAMES[0], score: 0 },
@@ -1656,6 +1773,7 @@ document.getElementById('confirmModalResetConfig').addEventListener('click', () 
   initialPoints = 30;
   const tb = document.getElementById('trackedPlayBtn');
   if (tb) tb.style.display = '';
+  document.body.classList.add('config');
   initialModal.classList.remove('hidden');
   saveState();
 });
@@ -1663,12 +1781,10 @@ document.getElementById('confirmModalCancel').addEventListener('click', () => {
   confirmModal.classList.add('hidden');
 });
 
-[winnerOverlay, historyOverlay, confirmModal, menuModal].forEach(modal => {
+// El winner overlay (Guardar/No guardar) NO cierra por click afuera: solo con sus botones.
+[historyOverlay, confirmModal, menuModal].forEach(modal => {
   modal.addEventListener('click', e => {
-    if (e.target === modal) {
-      if (modal === winnerOverlay) pendingWinnerIndex = -1;
-      modal.classList.add('hidden');
-    }
+    if (e.target === modal) modal.classList.add('hidden');
   });
 });
 
@@ -1716,6 +1832,7 @@ function startGame() {
   undoStack = [];
   quickMode = true;
   initialModal.classList.add('hidden');
+  document.body.classList.remove('config');
   render();
   saveState();
 }
@@ -1723,11 +1840,18 @@ function startGame() {
 // === PLAYERS SELECTION (partidas con historial) ===
 // Capacidad de jugadores por equipo según el modo de selección.
 function selectionCap() { return selection.mode === 'gallo' ? 1 : selection.format; }
+function monoOf(name) { const c = (name || '?').trim()[0] || '?'; return c.toUpperCase(); }
+function teamLabelFor(t) { return selection.mode === 'gallo' ? 'Jugador ' + (t + 1) : 'Equipo ' + (t + 1); }
+function teamOfPlayer(id) {
+  for (let t = 0; t < selection.slots.length; t++) if (selection.slots[t].includes(id)) return t;
+  return -1;
+}
 
 function openPlayersModal() {
   rosterEditMode = false;
-  const eb = document.getElementById('editRosterBtn');
-  if (eb) eb.textContent = 'Editar';
+  searchQuery = '';
+  const eb = document.getElementById('editRosterBtn'); if (eb) eb.textContent = 'Editar';
+  const si = document.getElementById('playerSearch'); if (si) si.value = '';
   selection = initialMode === 'gallo'
     ? { mode: 'gallo', format: 1, slots: [[], [], []] }
     : { mode: 'normal', format: 1, slots: [[], []] };
@@ -1741,65 +1865,80 @@ function openPlayersModal() {
 function renderPlayersSelection() {
   const gallo = selection.mode === 'gallo';
   const cap   = selectionCap();
-
   document.getElementById('formatSection').style.display = gallo ? 'none' : '';
-  document.getElementById('teamSection3').style.display  = gallo ? '' : 'none';
-  document.getElementById('teamLabel1').textContent = gallo ? 'Jugador 1' : 'Equipo 1';
-  document.getElementById('teamLabel2').textContent = gallo ? 'Jugador 2' : 'Equipo 2';
 
+  // Equipos fijos arriba
+  let th = '';
   selection.slots.forEach((ids, t) => {
-    let h = '';
-    for (let i = 0; i < cap; i++) {
-      const id = ids[i];
-      h += id != null
-        ? `<div class="slot filled" data-team="${t}" data-slot="${i}">${rosterName(id)}</div>`
-        : `<div class="slot" data-team="${t}" data-slot="${i}">+</div>`;
-    }
-    document.getElementById('slots' + (t + 1)).innerHTML = h;
-  });
-
-  const chips = document.getElementById('rosterChips');
-  if (!roster.length) {
-    chips.innerHTML = '<span class="roster-empty">Agregá jugadores abajo 👇</span>';
-  } else {
-    const used = new Set(selection.slots.flat());
-    chips.innerHTML = roster.map(p => rosterEditMode
-      ? `<div class="roster-chip deletable" data-id="${p.id}">${p.name} ✕</div>`
-      : `<div class="roster-chip ${used.has(p.id) ? 'used' : ''}" data-id="${p.id}">${p.name}</div>`
+    let chips = ids.map(id =>
+      `<span class="tchip" data-remove="${id}"><span class="mono">${monoOf(rosterName(id))}</span>${rosterName(id)} <span class="x">✕</span></span>`
     ).join('');
-  }
+    for (let i = ids.length; i < cap; i++) chips += '<span class="tslot">libre</span>';
+    th += `<div class="team-line"><span class="tlabel">${teamLabelFor(t)}</span>`
+        + `<span class="tchips">${chips}</span><span class="cap">${ids.length}/${cap}</span></div>`;
+  });
+  document.getElementById('teamsPinned').innerHTML = th;
 
+  // Pool de jugadores (buscador + recientes)
+  const q = searchQuery.trim().toLowerCase();
   const full = selection.slots.every(s => s.length === cap);
+  const rowFor = (p) => {
+    const mono = `<span class="mono">${monoOf(p.name)}</span>`;
+    if (rosterEditMode)
+      return `<div class="prow del" data-del="${p.id}">${mono}<span class="nm">${p.name}</span><button class="padd danger">✕</button></div>`;
+    const t = teamOfPlayer(p.id);
+    if (t >= 0)
+      return `<div class="prow in" data-remove="${p.id}">${mono}<span class="nm">${p.name} · ${teamLabelFor(t)}</span><button class="padd">✓</button></div>`;
+    return `<div class="prow" data-add="${p.id}">${mono}<span class="nm">${p.name}</span><button class="padd"${full ? ' disabled' : ''}>＋</button></div>`;
+  };
+
+  let ph = '';
+  if (!roster.length && !q) {
+    ph = '<div class="pool-empty">Todavía no hay jugadores. Escribí un nombre arriba y creá el primero.</div>';
+  } else if (q) {
+    const matches = roster.filter(p => p.name.toLowerCase().includes(q));
+    ph += matches.length ? matches.map(rowFor).join('') : '<div class="pool-empty">Sin coincidencias.</div>';
+    const exact = roster.some(p => p.name.toLowerCase() === q);
+    if (!exact && !rosterEditMode)
+      ph += `<div class="prow create" data-create="1"><span class="mono dashed">＋</span><span class="nm">Crear “${searchQuery.trim()}”</span></div>`;
+  } else {
+    const all = [...roster].sort((a, b) => a.name.localeCompare(b.name));
+    ph += '<div class="sec">Jugadores</div>';
+    ph += all.map(rowFor).join('');
+  }
+  document.getElementById('pool').innerHTML = ph;
+
   document.getElementById('confirmPlayers').disabled = !full;
 }
 
 function assignPlayer(id) {
-  const used = new Set(selection.slots.flat());
-  if (used.has(id)) return;
+  if (teamOfPlayer(id) >= 0) return;
   const cap = selectionCap();
   for (let t = 0; t < selection.slots.length; t++) {
-    if (selection.slots[t].length < cap) {
-      selection.slots[t].push(id);
-      renderPlayersSelection();
-      return;
-    }
+    if (selection.slots[t].length < cap) { selection.slots[t].push(id); break; }
   }
+  renderPlayersSelection();
 }
 
-function removeFromSlot(teamIdx, slotIdx) {
-  const ids = selection.slots[teamIdx];
-  if (ids && ids[slotIdx] != null) {
-    ids.splice(slotIdx, 1);
-    renderPlayersSelection();
-  }
+function removeAssignment(id) {
+  const t = teamOfPlayer(id);
+  if (t >= 0) { selection.slots[t] = selection.slots[t].filter(x => x !== id); renderPlayersSelection(); }
+}
+
+function createFromSearch() {
+  const name = searchQuery.trim();
+  if (!name) return;
+  const p = addRosterPlayer(name);
+  searchQuery = '';
+  const si = document.getElementById('playerSearch'); if (si) { si.value = ''; si.focus(); }
+  if (p) assignPlayer(p.id);
+  else renderPlayersSelection();
 }
 
 function deletePlayer(id) {
   roster = roster.filter(p => p.id !== id);
   saveRoster();
-  if (selection && selection.slots) {
-    selection.slots = selection.slots.map(s => s.filter(x => x !== id));
-  }
+  if (selection && selection.slots) selection.slots = selection.slots.map(s => s.filter(x => x !== id));
   sbDelete('players', id);
   renderPlayersSelection();
 }
@@ -1830,6 +1969,7 @@ function startTrackedGame() {
   }
 
   playersModal.classList.add('hidden');
+  document.body.classList.remove('config');
   render();
   saveState();
 }
@@ -1860,6 +2000,7 @@ flushPending();  // reintenta escrituras que quedaron sin conexión
 updateSyncStatus();
 window.addEventListener('online',  async () => { await flushPending(); syncRoster(); syncHistory(); updateSyncStatus(); });
 window.addEventListener('offline', updateSyncStatus);
+document.body.classList.add('config'); // al inicio se muestra el modal de configuración
 // Initial modal is shown by default
   </script>
 </body>
