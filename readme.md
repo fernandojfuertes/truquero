@@ -21,7 +21,9 @@
   - [Tabla de contenidos](#tabla-de-contenidos)
   - [ Características](#-características)
     - [Modos de juego](#modos-de-juego)
+    - [Jugadores y roster compartido](#jugadores-y-roster-compartido)
     - [Historial de partidas](#historial-de-partidas)
+    - [Indicador de sincronización](#indicador-de-sincronización)
     - [Otras funciones](#otras-funciones)
   - [ Uso](#-uso)
     - [Controles](#controles)
@@ -45,10 +47,15 @@
  
 ##  Características
  
+Al abrir la app, el modal **Truquero** pide elegir **Modalidad** (`Normal` o `Gallo`) y **Puntos** (`15` o `30`), y luego cómo arrancar:
+ 
+- **`Juego rápido`** — partida instantánea con nombres fijos (`Nosotros` / `Ellos`, o `Yo` / `El` / `Gallo`). Los nombres no se editan, no se guarda en el historial y el botón `Historial` queda oculto.
+- **`Jugar por los puntos`** — abre la selección de jugadores para armar los equipos a partir del *roster*; la partida se registra en el historial y suma a las estadísticas.
+ 
 ### Modos de juego
  
-**Modo tradicional (2 equipos)**
-- Equipos de 1, 2 o 3 jugadores
+**Modo Normal (2 equipos)**
+- Formatos 1v1, 2v2 y 3v3 al jugar por los puntos
 - Marcador hasta 30 puntos (15 malas + 15 buenas) o 15 puntos (set único)
 - Display de segmentos al estilo del marcador clásico de truco
  
@@ -57,14 +64,31 @@
 - Mano 1: A+B vs C / Mano 2: B+C vs A / Mano 3: C+A vs B
 - Botón `Sig. Mano` para rotar la alianza
 - Compatible con modo 15 puntos
+- Las partidas Gallo también se registran en el historial (sección propia + stats individuales)
+ 
+### Jugadores y roster compartido
+ 
+- Buscá, agregá o creá jugadores desde el modal de selección (`Buscar o agregar jugador…`)
+- Botón `Editar` para entrar en modo edición y borrar jugadores del roster
+- El roster y el historial se **comparten en la nube vía Supabase**: lo que se carga en un dispositivo aparece en los demás
+- Lectura instantánea desde caché local (`localStorage`) y funcionamiento *offline*
+- Las escrituras se encolan cuando no hay conexión y se sincronizan al volver online
  
 ### Historial de partidas
  
-- Solo disponible en modo tradicional (no Gallo)
-- Estadísticas por modalidad (1v1, 2v2, 3v3)
-- Registro de victorias, derrotas y racha actual por equipo
-- Las partidas se guardan al llegar al puntaje objetivo (15 o 30)
-- Al guardar, el marcador se reinicia automáticamente para una nueva partida
+- Disponible en modo Normal y en Gallo (solo en `Jugar por los puntos`)
+- Modo Normal agrupado por formato (1v1, 2v2, 3v3); Gallo en su propia sección
+- Estadísticas individuales por jugador y por equipo: victorias, derrotas y racha actual
+- Paginación con `Ver más` cuando hay muchas partidas
+- Al llegar al puntaje objetivo aparece la pantalla de ganador con la opción de `Guardar` o `No guardar`
+ 
+### Indicador de sincronización
+ 
+Un chip en pantalla refleja el estado de Supabase:
+- **Oculto** — todo sincronizado
+- **`↻ N sin guardar`** — hay escrituras pendientes
+- **`⚠ Sin conexión`** / **`⚠ Sin conexión · N sin guardar`** — sin red, con la cola pendiente
+ 
 ### Otras funciones
  
 -  Modo oscuro / claro
@@ -83,8 +107,8 @@ Abrí `index.html` en el navegador, o accedé desde el link del repositorio vía
 | Botón | Acción |
 |:---:|:---|
 | `+` / `-` | Sumar o restar punto al equipo |
-| `Historial` | Ver estadísticas y partidas guardadas 
-| `Sig. Mano` | Rotar la alianza en modo Gallo ||
+| `Historial` | Ver estadísticas y partidas guardadas (oculto en `Juego rápido`) |
+| `Sig. Mano` | Rotar la alianza en modo Gallo |
 | `Reiniciar` | Volver a cero |
 | `◑` | Alternar modo oscuro/claro |
  
@@ -92,9 +116,10 @@ Abrí `index.html` en el navegador, o accedé desde el link del repositorio vía
  
 ##  Tecnología
  
-**Vanilla JS + CSS + HTML.** Sin frameworks, sin dependencias, sin build step.
+**Vanilla JS + CSS + HTML.** Sin frameworks ni build step; única dependencia externa: el cliente de **Supabase** (vía CDN) para el roster y el historial compartidos.
  
-- Estado persistido en `localStorage`
+- Roster e historial compartidos en **Supabase**, con caché y cola offline en `localStorage`
+- Estado de la partida persistido en `localStorage`
 - Sonidos generados con **Web Audio API**
 - Display de segmentos construido con CSS puro
 
