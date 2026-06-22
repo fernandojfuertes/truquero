@@ -681,6 +681,8 @@ body {
 .group-card.active .g-mono { border-color:var(--btn-text); }
 .group-card.group-new { border-style:dashed; color:var(--text-muted); justify-content:center; font-weight:700; text-transform:uppercase; letter-spacing:1px; font-size:12px; }
 .pool .sec .hint { color:var(--text-muted); font-weight:600; letter-spacing:0; text-transform:none; }
+.login-help { font-size:13px; color:var(--text-muted); line-height:1.5; margin:0 0 14px; }
+.link-btn { display:block; margin:14px auto 0; background:none; border:none; color:var(--text-muted); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; cursor:pointer; font-family:var(--font); }
 /* En la pantalla de configuración no se muestran el tablero ni los controles de juego */
 body.config .bottom-actions, body.config #syncStatus,
 body.config #board, body.config #controls { display: none; }
@@ -716,13 +718,19 @@ body.config #board, body.config #controls { display: none; }
     </div>
   </div>
 
-  <!-- Start modal: elegir tipo de juego -->
-  <div id="startModal" class="modal-overlay">
+  <!-- Login modal (magic link) — puerta de "Jugar por los puntos" -->
+  <div id="loginModal" class="modal-overlay hidden">
     <div class="modal-sheet">
-      <div class="modal-title" style="margin:24px 0 28px">Truquero</div>
-      <div class="modal-actions" style="flex-direction: column; gap: 10px; margin-top:0;">
-        <button class="modal-btn-primary" id="startQuickBtn" style="flex:0 0 auto;">Juego rápido</button>
-        <button class="modal-btn-secondary" id="startTrackedBtn" style="flex:0 0 auto;">Jugar por los puntos</button>
+      <div class="modal-header">
+        <div class="modal-title">Entrar</div>
+        <button class="modal-close" id="closeLogin" aria-label="Cerrar">✕</button>
+      </div>
+      <p class="login-help" id="loginHelp">Para llevar tus puntos y grupos, entrá con tu email. Te mandamos un link para acceder.</p>
+      <div class="search-row" style="margin-bottom:0;">
+        <input id="loginEmail" class="search-input" type="email" inputmode="email" autocomplete="email" placeholder="tu@email.com" />
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn-primary" id="loginSendBtn">Enviarme el link</button>
       </div>
     </div>
   </div>
@@ -730,7 +738,10 @@ body.config #board, body.config #controls { display: none; }
   <!-- Group selector modal -->
   <div id="groupModal" class="modal-overlay hidden">
     <div class="modal-sheet">
-      <div class="modal-title" style="margin-bottom:16px">Elegí grupo</div>
+      <div class="modal-header">
+        <div class="modal-title">Elegí grupo</div>
+        <button class="modal-close" id="closeGroup" aria-label="Cerrar">✕</button>
+      </div>
       <div id="groupList" class="group-list"></div>
 
       <div id="newGroupForm" class="team-section u-hide" style="margin-top:14px;">
@@ -748,18 +759,14 @@ body.config #board, body.config #controls { display: none; }
         <button class="modal-btn-secondary" id="groupBackBtn">Atrás</button>
         <button class="modal-btn-primary" id="groupContinueBtn">Continuar</button>
       </div>
+      <button class="link-btn" id="logoutBtn" style="display:none">Salir (<span id="logoutEmail"></span>)</button>
     </div>
   </div>
 
-  <!-- Initial config modal (modalidad + puntos) -->
-  <div id="initialModal" class="modal-overlay hidden">
+  <!-- Home: selector de modo (modalidad + puntos) -->
+  <div id="initialModal" class="modal-overlay">
     <div class="modal-sheet">
       <div class="modal-title" style="margin-bottom:16px">Truquero</div>
-
-      <div id="initialGroupChip" class="group-chip u-hide">
-        <span class="nm" id="initialGroupName"></span>
-        <span class="sw">Cambiar</span>
-      </div>
 
       <div class="team-section">
         <div class="team-section-label">Modalidad</div>
@@ -778,8 +785,8 @@ body.config #board, body.config #controls { display: none; }
       </div>
 
       <div class="modal-actions" style="flex-direction: column; gap: 8px;">
-        <button class="modal-btn-primary" id="initialPrimaryBtn" style="flex:0 0 auto;">Empezar</button>
-        <button class="modal-btn-secondary" id="initialBackBtn" style="flex:0 0 auto;">Atrás</button>
+        <button class="modal-btn-primary" id="initialQuickBtn" style="flex:0 0 auto;">Empezar</button>
+        <button class="modal-btn-secondary" id="initialTrackedBtn" style="flex:0 0 auto;">Jugar por los puntos</button>
       </div>
     </div>
   </div>
@@ -893,7 +900,8 @@ let groupMembers   = {};          // { groupId: [playerId, ...] }
 let activeGroupId  = null;        // grupo activo (flujo "por los puntos")
 let playFlow       = 'quick';     // 'quick' | 'tracked'
 let pendingGroupId = null;        // selección tentativa dentro del groupModal
-let groupReturn    = 'initial';   // a dónde volver tras elegir grupo: 'initial' | 'history'
+let groupReturn    = 'players';   // a dónde volver tras elegir grupo: 'players' | 'history'
+let currentUser    = null;        // sesión de Supabase Auth (null = no logueado)
 
 // === DOM REFS ===
 const board            = document.getElementById('board');
@@ -910,7 +918,7 @@ const historyOverlay   = document.getElementById('historyOverlay');
 const confirmModal     = document.getElementById('confirmModal');
 const menuModal        = document.getElementById('menuModal');
 const playersModal     = document.getElementById('playersModal');
-const startModal       = document.getElementById('startModal');
+const loginModal       = document.getElementById('loginModal');
 const groupModal       = document.getElementById('groupModal');
 
 // === ELEMENT CACHE ===
@@ -1785,7 +1793,7 @@ function renderHistoryView() {
 // === KEYBOARD SHORTCUTS ===
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
-  if ([winnerOverlay, confirmModal, menuModal, playersModal, initialModal, startModal, groupModal].some(m => !m.classList.contains('hidden'))) return;
+  if ([winnerOverlay, confirmModal, menuModal, playersModal, initialModal, loginModal, groupModal].some(m => !m.classList.contains('hidden'))) return;
 
   const isGallo = state.teams.length === 3;
 
@@ -1840,10 +1848,11 @@ if (toggleTargetBtn) toggleTargetBtn.addEventListener('click', toggleTarget);
 if (historyBtn) historyBtn.addEventListener('click', openHistory);
 
 // --- Flujo de pantallas iniciales (start -> [grupo] -> modalidad) ---
-function showStart() {
+// Home = selector de modo (modalidad + puntos). Anota porotos sin fricción.
+function showHome() {
   playFlow = 'quick';
   document.body.classList.add('config');
-  [initialModal, groupModal, playersModal, historyOverlay, winnerOverlay, confirmModal, menuModal]
+  [groupModal, loginModal, playersModal, historyOverlay, winnerOverlay, confirmModal, menuModal]
     .forEach(m => m && m.classList.add('hidden'));
   // Reset visual de modalidad/puntos a los valores por defecto.
   initialMode = 'dupla';
@@ -1851,23 +1860,61 @@ function showStart() {
   const sels = initialModal.querySelectorAll('.size-selector');
   if (sels[0]) sels[0].querySelectorAll('.initial-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
   if (sels[1]) sels[1].querySelectorAll('.initial-btn').forEach((b, i) => b.classList.toggle('active', i === 1));
-  startModal.classList.remove('hidden');
+  initialModal.classList.remove('hidden');
 }
 
-function openInitialConfig() {
-  const chip   = document.getElementById('initialGroupChip');
-  const nameEl = document.getElementById('initialGroupName');
-  if (playFlow === 'tracked') {
-    if (nameEl) nameEl.textContent = groupName(activeGroupId);
-    chip.classList.remove('u-hide');
-  } else {
-    chip.classList.add('u-hide');
+// === AUTH (Supabase, magic link) ===
+function authReady() { return !!(sb && sb.auth); }
+async function loadSession() {
+  if (!authReady()) return;
+  try { const { data } = await sb.auth.getSession(); currentUser = data.session?.user || null; }
+  catch(e) { currentUser = null; }
+}
+function updateLogoutUI() {
+  const el = document.getElementById('logoutEmail');
+  if (el) el.textContent = currentUser?.email || '';
+  const btn = document.getElementById('logoutBtn');
+  if (btn) btn.style.display = currentUser ? '' : 'none';
+}
+function openLogin() {
+  const help = document.getElementById('loginHelp');
+  if (help) help.textContent = 'Para llevar tus puntos y grupos, entrá con tu email. Te mandamos un link para acceder.';
+  const inp = document.getElementById('loginEmail');
+  initialModal.classList.add('hidden');
+  loginModal.classList.remove('hidden');
+  if (inp) inp.focus();
+}
+async function sendMagicLink() {
+  const inp  = document.getElementById('loginEmail');
+  const help = document.getElementById('loginHelp');
+  const btn  = document.getElementById('loginSendBtn');
+  const email = (inp ? inp.value : '').trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { if (help) help.textContent = 'Poné un email válido.'; return; }
+  if (!authReady()) { if (help) help.textContent = 'No hay conexión con el servidor. Probá más tarde.'; return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+  try {
+    // Recordamos la intención: al volver del email seguimos directo a grupos.
+    try { localStorage.setItem('truquero_pending_tracked', '1'); } catch(e) {}
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href.split('#')[0].split('?')[0] } });
+    if (error) throw error;
+    if (help) help.textContent = '✓ Te mandamos un link a ' + email + '. Abrilo en este dispositivo para entrar.';
+  } catch(e) {
+    if (help) help.textContent = 'No se pudo enviar: ' + (e?.message || e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Enviarme el link'; }
   }
-  document.getElementById('initialPrimaryBtn').textContent =
-    playFlow === 'tracked' ? 'Elegir jugadores' : 'Empezar';
-  startModal.classList.add('hidden');
-  groupModal.classList.add('hidden');
-  initialModal.classList.remove('hidden');
+}
+async function logout() {
+  if (authReady()) { try { await sb.auth.signOut(); } catch(e) {} }
+  currentUser = null;
+  updateLogoutUI();
+  showHome();
+}
+// "Jugar por los puntos": gate de login obligatorio.
+function goTracked() {
+  playFlow = 'tracked';
+  if (currentUser) openGroupModal('players');
+  else openLogin();
 }
 
 function renderGroupList() {
@@ -1890,37 +1937,45 @@ function renderGroupList() {
 }
 
 function openGroupModal(returnTo) {
-  groupReturn = returnTo || 'initial';
+  groupReturn = returnTo || 'players';
   pendingGroupId = activeGroupId;
   document.getElementById('newGroupForm').classList.add('u-hide');
   document.getElementById('groupMainActions').classList.remove('u-hide');
+  updateLogoutUI();
   renderGroupList();
   initialModal.classList.add('hidden');
   historyOverlay.classList.add('hidden');
-  startModal.classList.add('hidden');
+  loginModal.classList.add('hidden');
   groupModal.classList.remove('hidden');
 }
 
+// Confirmar grupo elegido: sigue a jugadores (flujo de juego) o vuelve al historial.
 function closeGroupModalTo(target) {
   groupModal.classList.add('hidden');
   if (target === 'history') { renderHistoryView(); historyOverlay.classList.remove('hidden'); }
-  else openInitialConfig();
+  else openPlayersModal();
 }
 
-// --- Wiring: pantalla inicial ---
-document.getElementById('startQuickBtn').addEventListener('click', () => { playFlow = 'quick'; openInitialConfig(); });
-document.getElementById('startTrackedBtn').addEventListener('click', () => { playFlow = 'tracked'; openInitialConfig(); });
+// Cancelar el selector de grupo (Atrás / ✕): vuelve de donde vino sin elegir.
+function cancelGroupModal() {
+  groupModal.classList.add('hidden');
+  if (groupReturn === 'history') historyOverlay.classList.remove('hidden');
+  else showHome();
+}
 
-// --- Wiring: modalidad ---
-document.getElementById('initialPrimaryBtn').addEventListener('click', () => {
-  if (playFlow === 'tracked') openPlayersModal();
-  else startGame();
-});
-document.getElementById('initialBackBtn').addEventListener('click', showStart);
-document.getElementById('initialGroupChip').addEventListener('click', () => openGroupModal('initial'));
+// --- Wiring: home ---
+document.getElementById('initialQuickBtn').addEventListener('click', startGame);
+document.getElementById('initialTrackedBtn').addEventListener('click', goTracked);
+
+// --- Wiring: login ---
+document.getElementById('loginSendBtn').addEventListener('click', sendMagicLink);
+document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendMagicLink(); } });
+document.getElementById('closeLogin').addEventListener('click', showHome);
+document.getElementById('logoutBtn').addEventListener('click', logout);
 
 // --- Wiring: grupos ---
 document.getElementById('historyGroupChip').addEventListener('click', () => openGroupModal('history'));
+document.getElementById('closeGroup').addEventListener('click', cancelGroupModal);
 document.getElementById('groupList').addEventListener('click', e => {
   const card = e.target.closest('[data-group],[data-new]');
   if (!card) return;
@@ -1954,7 +2009,7 @@ document.getElementById('groupContinueBtn').addEventListener('click', () => {
   saveActiveGroup();
   closeGroupModalTo(groupReturn);
 });
-document.getElementById('groupBackBtn').addEventListener('click', () => closeGroupModalTo(groupReturn));
+document.getElementById('groupBackBtn').addEventListener('click', cancelGroupModal);
 
 document.getElementById('formatSelector').addEventListener('click', e => {
   const btn = e.target.closest('.initial-btn');
@@ -2003,7 +2058,7 @@ document.getElementById('playerSearch').addEventListener('keydown', e => {
 document.getElementById('confirmPlayers').addEventListener('click', startTrackedGame);
 document.getElementById('cancelPlayers').addEventListener('click', () => {
   playersModal.classList.add('hidden');
-  initialModal.classList.remove('hidden');
+  openGroupModal('players');   // Atrás vuelve al selector de grupo
 });
 
 document.getElementById('saveGameBtn').addEventListener('click', () => {
@@ -2039,7 +2094,7 @@ document.getElementById('confirmModalReset').addEventListener('click', () => {
   undoStack = [];
   rankedConfig = { active: false, teamSize: 1, teams: [[], []] };
   quickMode = false;
-  showStart();
+  showHome();
   saveState();
 });
 document.getElementById('confirmModalCancel').addEventListener('click', () => {
@@ -2124,6 +2179,7 @@ function openPlayersModal() {
     b.classList.toggle('active', parseInt(b.dataset.format) === selection.format));
   renderPlayersSelection();
   initialModal.classList.add('hidden');
+  groupModal.classList.add('hidden');
   playersModal.classList.remove('hidden');
 }
 
@@ -2284,7 +2340,28 @@ flushPending();  // reintenta escrituras que quedaron sin conexión
 updateSyncStatus();
 window.addEventListener('online',  async () => { await flushPending(); syncRoster(); syncHistory(); syncGroups(); syncMembers(); updateSyncStatus(); });
 window.addEventListener('offline', updateSyncStatus);
-document.body.classList.add('config'); // al inicio se muestra el modal de configuración
+document.body.classList.add('config'); // al inicio se muestra el home (selector de modo)
+
+// === AUTH INIT ===
+// Mantiene la sesión al día; si volvés del magic link con intención de trackear,
+// te lleva directo al selector de grupo.
+(async () => {
+  await loadSession();
+  updateLogoutUI();
+  if (authReady()) {
+    sb.auth.onAuthStateChange((_event, session) => {
+      currentUser = session?.user || null;
+      updateLogoutUI();
+    });
+  }
+  let pendingTracked = false;
+  try { pendingTracked = localStorage.getItem('truquero_pending_tracked') === '1'; } catch(e) {}
+  if (currentUser && pendingTracked) {
+    try { localStorage.removeItem('truquero_pending_tracked'); } catch(e) {}
+    playFlow = 'tracked';
+    openGroupModal('players');
+  }
+})();
 
 // === WAKE LOCK: mantener la pantalla encendida mientras la app está visible ===
 let wakeLock = null;
