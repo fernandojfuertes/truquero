@@ -965,15 +965,17 @@ function saveMembers() { try { localStorage.setItem(LS_MEMBERS, JSON.stringify(g
 function loadActiveGroup() { try { activeGroupId = localStorage.getItem(LS_ACTIVE) || null; } catch(e) { activeGroupId = null; } }
 function saveActiveGroup() { try { localStorage.setItem(LS_ACTIVE, activeGroupId || ''); } catch(e) {} }
 
-// Garantiza un grupo "General" por defecto y un grupo activo válido.
-function ensureDefaultGroup() {
-  if (!groups.some(g => g.id === DEFAULT_GROUP_ID)) {
-    groups.unshift({ id: DEFAULT_GROUP_ID, name: 'General' });
+// Tras loguear y sincronizar: si no tengo ningún grupo, creo uno "General" propio;
+// y dejo un grupo activo válido (mío).
+function ensureMyDefaultGroup() {
+  if (!groups.length) {
+    const g = { id: genId(), name: 'General' };
+    groups.push(g);
     saveGroups();
-    sbUpsert('groups', { id: DEFAULT_GROUP_ID, name: 'General' });
+    sbUpsert('groups', { id: g.id, name: g.name, owner_user_id: currentUser?.id });
   }
   if (!activeGroupId || !groups.some(g => g.id === activeGroupId)) {
-    activeGroupId = DEFAULT_GROUP_ID;
+    activeGroupId = groups[0].id;
     saveActiveGroup();
   }
 }
@@ -1003,7 +1005,7 @@ function createGroup(name) {
   const g = { id: genId(), name };
   groups.push(g);
   saveGroups();
-  sbUpsert('groups', { id: g.id, name: g.name });
+  sbUpsert('groups', { id: g.id, name: g.name, owner_user_id: currentUser?.id });
   return g;
 }
 
@@ -1072,50 +1074,76 @@ function updateSyncStatus() {
 }
 
 // --- Sincronización desde Supabase (refresca la caché) ---
+// Fase 2a: todo filtrado por dueño (currentUser). La barrera real (RLS) se cierra en el merge.
 async function syncRoster() {
-  if (!sb) return;
+  if (!sb || !currentUser) return;
   try {
-    const { data, error } = await sb.from('players').select('id,name').order('created_at');
+    const { data, error } = await sb.from('players').select('id,name').eq('owner_user_id', currentUser.id).order('created_at');
     if (error) throw error;
-    roster = data.map(r => ({ id: r.id, name: r.name }));
+    roster = (data || []).map(r => ({ id: r.id, name: r.name }));
     saveRoster();
     if (playersModal && !playersModal.classList.contains('hidden')) renderPlayersSelection();
   } catch(e) { console.warn('syncRoster:', e?.message || e); }
 }
-async function syncHistory() {
-  if (!sb) return;
+async function syncGroups() {
+  if (!sb || !currentUser) return;
   try {
-    const { data, error } = await sb.from('games').select('*').order('date', { ascending: false });
+    const { data, error } = await sb.from('groups').select('id,name').eq('owner_user_id', currentUser.id).order('created_at');
     if (error) throw error;
-    gameHistory = data.map(g => ({
+    groups = (data || []).map(r => ({ id: r.id, name: r.name }));
+    saveGroups();
+    if (groupModal && !groupModal.classList.contains('hidden')) renderGroupList();
+  } catch(e) { console.warn('syncGroups:', e?.message || e); }
+}
+async function syncMembers() {
+  if (!sb || !currentUser) return;
+  const myGroupIds = groups.map(g => g.id);
+  if (!myGroupIds.length) { groupMembers = {}; saveMembers(); return; }
+  try {
+    const { data, error } = await sb.from('group_members').select('group_id,player_id').in('group_id', myGroupIds);
+    if (error) throw error;
+    const m = {};
+    (data || []).forEach(r => { (m[r.group_id] || (m[r.group_id] = [])).push(r.player_id); });
+    groupMembers = m;
+    saveMembers();
+  } catch(e) { console.warn('syncMembers:', e?.message || e); }
+}
+async function syncHistory() {
+  if (!sb || !currentUser) return;
+  const myGroupIds = groups.map(g => g.id);
+  if (!myGroupIds.length) { gameHistory = []; saveHistory(); return; }
+  try {
+    const { data, error } = await sb.from('games').select('*').in('group_id', myGroupIds).order('date', { ascending: false });
+    if (error) throw error;
+    gameHistory = (data || []).map(g => ({
       id: g.id, date: g.date, teamSize: g.team_size, mode: g.mode, teams: g.teams, winnerKey: g.winner_key, groupId: g.group_id
     }));
     saveHistory();
     if (historyOverlay && !historyOverlay.classList.contains('hidden')) renderHistoryView();
   } catch(e) { console.warn('syncHistory:', e?.message || e); }
 }
-async function syncGroups() {
-  if (!sb) return;
-  try {
-    const { data, error } = await sb.from('groups').select('id,name').order('created_at');
-    if (error) throw error;
-    if (data && data.length) { groups = data.map(r => ({ id: r.id, name: r.name })); saveGroups(); }
-    ensureDefaultGroup();
-    if (groupModal && !groupModal.classList.contains('hidden')) renderGroupList();
-  } catch(e) { console.warn('syncGroups:', e?.message || e); }
+
+// Vacía datos por-usuario en memoria + caché (al salir o cambiar de cuenta).
+function clearLocalData() {
+  groups = []; groupMembers = {}; roster = []; gameHistory = []; activeGroupId = null;
+  saveGroups(); saveMembers(); saveRoster(); saveHistory(); saveActiveGroup();
 }
-async function syncMembers() {
-  if (!sb) return;
-  try {
-    const { data, error } = await sb.from('group_members').select('group_id,player_id');
-    if (error) throw error;
-    if (data) {
-      const m = {};
-      data.forEach(r => { (m[r.group_id] || (m[r.group_id] = [])).push(r.player_id); });
-      groupMembers = m;
-      saveMembers();
-    }
-  } catch(e) { console.warn('syncMembers:', e?.message || e); }
+
+// Al loguear: si la caché es de otra cuenta, limpiar; luego sincronizar lo mío en orden
+// (grupos primero: members/history dependen de mis group ids) y garantizar grupo propio.
+async function onLoggedIn() {
+  if (!currentUser) return;
+  let cachedUid = null;
+  try { cachedUid = localStorage.getItem('truquero_cache_uid'); } catch(e) {}
+  if (cachedUid && cachedUid !== currentUser.id) clearLocalData();
+  try { localStorage.setItem('truquero_cache_uid', currentUser.id); } catch(e) {}
+  await syncGroups();
+  await syncMembers();
+  await syncRoster();
+  await syncHistory();
+  ensureMyDefaultGroup();
+  await flushPending();
+  updateSyncStatus();
 }
 
 // === THEME ===
@@ -1220,7 +1248,7 @@ function addRosterPlayer(name) {
   const p = { id: genId(), name };
   roster.push(p);
   saveRoster();
-  sbUpsert('players', { id: p.id, name: p.name });
+  sbUpsert('players', { id: p.id, name: p.name, owner_user_id: currentUser?.id });
   return p;
 }
 
@@ -1907,6 +1935,8 @@ async function sendMagicLink() {
 async function logout() {
   if (authReady()) { try { await sb.auth.signOut(); } catch(e) {} }
   currentUser = null;
+  try { localStorage.removeItem('truquero_cache_uid'); } catch(e) {}
+  clearLocalData();
   updateLogoutUI();
   showHome();
 }
@@ -2326,41 +2356,40 @@ menuModal.querySelectorAll('.menu-item').forEach(item => {
 // === INIT ===
 loadTheme();
 loadState();
-loadHistory();   // caché local: muestra al instante
+loadHistory();   // caché local: muestra al instante (lo del último usuario en este equipo)
 loadRoster();
 loadGroups();
 loadMembers();
 loadActiveGroup();
-ensureDefaultGroup();
-syncRoster();    // refresca desde Supabase (fuente compartida)
-syncHistory();
-syncGroups();
-syncMembers();
-flushPending();  // reintenta escrituras que quedaron sin conexión
 updateSyncStatus();
-window.addEventListener('online',  async () => { await flushPending(); syncRoster(); syncHistory(); syncGroups(); syncMembers(); updateSyncStatus(); });
+// El sync por-usuario (grupos/jugadores/historial) corre al loguear, no anónimo.
+window.addEventListener('online',  () => { if (currentUser) onLoggedIn(); else updateSyncStatus(); });
 window.addEventListener('offline', updateSyncStatus);
 document.body.classList.add('config'); // al inicio se muestra el home (selector de modo)
 
 // === AUTH INIT ===
-// Mantiene la sesión al día; si volvés del magic link con intención de trackear,
-// te lleva directo al selector de grupo.
-(async () => {
-  await loadSession();
+// El acceso a grupos/jugadores/historial vive detrás del login (Fase 2a: filtrado por usuario).
+// onAuthStateChange cubre tanto la sesión ya guardada como el regreso del magic link.
+let loggedInHandled = false;
+async function handleSession(session) {
+  currentUser = session?.user || null;
   updateLogoutUI();
-  if (authReady()) {
-    sb.auth.onAuthStateChange((_event, session) => {
-      currentUser = session?.user || null;
-      updateLogoutUI();
-    });
-  }
+  if (!currentUser) { loggedInHandled = false; return; }
+  if (loggedInHandled) return;
+  loggedInHandled = true;
+  await onLoggedIn();
   let pendingTracked = false;
   try { pendingTracked = localStorage.getItem('truquero_pending_tracked') === '1'; } catch(e) {}
-  if (currentUser && pendingTracked) {
+  if (pendingTracked) {
     try { localStorage.removeItem('truquero_pending_tracked'); } catch(e) {}
     playFlow = 'tracked';
     openGroupModal('players');
   }
+}
+(async () => {
+  if (authReady()) sb.auth.onAuthStateChange((_event, session) => { handleSession(session); });
+  await loadSession();
+  if (currentUser) handleSession({ user: currentUser });
 })();
 
 // === WAKE LOCK: mantener la pantalla encendida mientras la app está visible ===
